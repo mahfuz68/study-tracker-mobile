@@ -660,8 +660,18 @@ class _McqExamScreenState extends State<_McqExamScreen>
   }
 
   Widget _buildTimer(int remaining) {
-    final isWarning = remaining <= 10;
-    final isCaution = remaining <= 20 && !isWarning;
+    // Timer color: green by default → amber when ≤ 20% → red when ≤ 10%
+    final mcq = context.read<McqProvider>();
+    final totalTime = mcq.totalQuestions * mcq.timePerQuestion;
+    final pct = totalTime > 0 ? remaining / totalTime : 0.0;
+    final isWarning = pct <= 0.10;
+    final isCaution = pct <= 0.20 && !isWarning;
+    final timerColor = isWarning
+        ? AppTheme.errorRed
+        : isCaution
+            ? AppTheme.warningAmber
+            : AppTheme.primaryGreen;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: AppTheme.surfaceElevated,
@@ -669,22 +679,14 @@ class _McqExamScreenState extends State<_McqExamScreen>
         children: [
           Icon(
             Icons.timer,
-            color: isWarning
-                ? AppTheme.errorRed
-                : isCaution
-                    ? AppTheme.warningAmber
-                    : AppTheme.primaryGreen,
+            color: timerColor,
             size: 20,
           ),
           const SizedBox(width: 8),
           Text(
             _formatTime(remaining),
             style: TextStyle(
-              color: isWarning
-                  ? AppTheme.errorRed
-                  : isCaution
-                      ? AppTheme.warningAmber
-                      : AppTheme.textPrimary,
+              color: timerColor,
               fontSize: 18,
               fontWeight: FontWeight.w700,
             ),

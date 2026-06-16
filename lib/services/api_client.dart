@@ -23,6 +23,10 @@ class ApiClient {
 
   String get baseUrl => ApiConfig.baseUrl;
 
+  /// Public getter for the current JWT token. Used by admin and other
+  /// services that need to build Authorization headers directly.
+  String? get jwtToken => _jwtToken;
+
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
     final prefs = await SharedPreferences.getInstance();

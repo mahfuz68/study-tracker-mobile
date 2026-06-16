@@ -5,6 +5,7 @@ import 'providers/progress_provider.dart';
 import 'providers/mcq_provider.dart';
 import 'providers/puzzle_provider.dart';
 import 'providers/navigation_controller.dart';
+import 'providers/admin_provider.dart';
 import 'services/notification_service.dart';
 import 'app.dart';
 
@@ -22,6 +23,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => McqProvider()),
         ChangeNotifierProvider(create: (_) => PuzzleProvider()),
         ChangeNotifierProvider(create: (_) => NavigationController()),
+        ChangeNotifierProvider(create: (_) => AdminProvider()),
       ],
       child: const StudyProgressApp(),
     ),

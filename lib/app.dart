@@ -8,11 +8,7 @@ import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/mcq/mcq_history_screen.dart';
 import 'screens/leaderboard/leaderboard_screen.dart';
 import 'screens/profile/profile_screen.dart';
-import 'screens/admin/admin_dashboard_screen.dart';
-import 'screens/admin/routine_screen.dart';
-import 'screens/admin/questions_screen.dart';
-import 'screens/admin/puzzles_admin_screen.dart';
-import 'screens/admin/users_screen.dart';
+import 'screens/admin/admin_screen.dart';
 import 'screens/notifications/notification_screen.dart';
 import 'widgets/main_scaffold.dart';
 
@@ -38,11 +34,11 @@ class StudyProgressApp extends StatelessWidget {
         '/mcq/history': (_) => const McqHistoryScreen(),
         '/leaderboard': (_) => const LeaderboardScreen(),
         '/profile': (_) => const ProfileScreen(),
-        '/admin': (_) => const AdminDashboardScreen(),
-        '/admin/routine': (_) => const RoutineScreen(),
-        '/admin/questions': (_) => const QuestionsScreen(),
-        '/admin/puzzles': (_) => const PuzzlesAdminScreen(),
-        '/admin/users': (_) => const UsersScreen(),
+        '/admin': (_) => const AdminScreen(),
+        '/admin/routine': (_) => const AdminRoutineScreen(),
+        '/admin/questions': (_) => const AdminQuestionsScreen(),
+        '/admin/puzzles': (_) => const AdminPuzzlesScreen(),
+        '/admin/users': (_) => const AdminUsersScreen(),
         '/notifications': (_) => const NotificationScreen(),
       },
     );

@@ -12,32 +12,50 @@ class McqExamScreen extends StatefulWidget {
 }
 
 class _McqExamScreenState extends State<McqExamScreen> {
-  final Map<int, int> _remainingTime = {};
-  final Map<int, Timer> _timers = {};
+  // Global exam timer — counts down from totalQuestions × timePerQuestion
+  Timer? _globalTimer;
+  int _totalSecondsRemaining = 0;
   int _tabSwitches = 0;
 
   @override
   void initState() {
     super.initState();
-    _startTimers();
+    _startGlobalTimer();
   }
 
-  void _startTimers() {
+  void _startGlobalTimer() {
     final mcq = context.read<McqProvider>();
-    for (int i = 0; i < mcq.totalQuestions; i++) {
-      _remainingTime[i] = mcq.timePerQuestion;
-      _timers[i] = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (!mounted) return;
-        setState(() {
-          _remainingTime[i] = (_remainingTime[i] ?? mcq.timePerQuestion) - 1;
-          if (_remainingTime[i]! <= 0) {
-            timer.cancel();
-            mcq.lockAnswer(i);
-            _autoAdvance(mcq);
-          }
-        });
+    _totalSecondsRemaining = mcq.totalQuestions * mcq.timePerQuestion;
+
+    _globalTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      setState(() {
+        _totalSecondsRemaining--;
+        if (_totalSecondsRemaining <= 0) {
+          timer.cancel();
+          _autoSubmitAll(mcq);
+        }
       });
+    });
+  }
+
+  void _autoSubmitAll(McqProvider mcq) {
+    // Time's up — lock all unanswered questions and submit
+    for (int i = 0; i < mcq.totalQuestions; i++) {
+      if (!mcq.locked[i]) {
+        mcq.lockAnswer(i);
+      }
     }
+    _submitExam(mcq);
+  }
+
+  int get _currentQuestionTimeRemaining {
+    // Distribute remaining time proportionally — each question gets equal share
+    final mcq = context.read<McqProvider>();
+    final perQuestion = _totalSecondsRemaining > 0
+        ? _totalSecondsRemaining ~/ (mcq.totalQuestions - mcq.currentIndex)
+        : 0;
+    return perQuestion;
   }
 
   void _autoAdvance(McqProvider mcq) {
@@ -61,13 +79,12 @@ class _McqExamScreenState extends State<McqExamScreen> {
 
   @override
   void dispose() {
-    for (final timer in _timers.values) {
-      timer.cancel();
-    }
+    _globalTimer?.cancel();
     super.dispose();
   }
 
   void _submitExam(McqProvider mcq) async {
+    _globalTimer?.cancel();
     if (!mounted) return;
     showDialog(
       context: context,
@@ -122,185 +139,228 @@ class _McqExamScreenState extends State<McqExamScreen> {
         }
       },
       child: Scaffold(
-      appBar: AppBar(
-        title: Consumer<McqProvider>(
-          builder: (_, mcq, __) => Text(
-            'Q${mcq.currentIndex + 1}/${mcq.totalQuestions}',
-          ),
-        ),
-        actions: [
-          Consumer<McqProvider>(
-            builder: (_, mcq, __) => Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Center(
-                child: Text(
-                  '${mcq.answeredCount}/${mcq.totalQuestions}',
-                  style: const TextStyle(
-                      color: AppTheme.primaryGreen,
-                      fontWeight: FontWeight.w600),
-                ),
-              ),
+        appBar: AppBar(
+          title: Consumer<McqProvider>(
+            builder: (_, mcq, __) => Text(
+              'Q${mcq.currentIndex + 1}/${mcq.totalQuestions}',
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.grid_view),
-            onPressed: () => _showNavigator(context),
-          ),
-        ],
-      ),
-      body: Consumer<McqProvider>(
-        builder: (context, mcq, _) {
-          if (mcq.questions.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final idx = mcq.currentIndex;
-          final q = mcq.questions[idx];
-          final remaining = _remainingTime[idx] ?? mcq.timePerQuestion;
-
-          return Column(
-            children: [
-              _buildTimerBar(remaining, mcq),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        q.question,
-                        style: const TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w500,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      ...List.generate(4, (i) {
-                        final isSelected = mcq.answers[idx] == i;
-                        final isLocked = mcq.locked[idx];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: InkWell(
-                            onTap: isLocked ? null : () => mcq.selectAnswer(idx, i),
-                            child: Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppTheme.primaryGreen.withOpacity(0.15)
-                                    : AppTheme.surfaceElevated,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? AppTheme.primaryGreen
-                                      : isLocked
-                                          ? AppTheme.borderColor.withOpacity(0.5)
-                                          : AppTheme.borderColor,
-                                  width: isSelected ? 1.5 : 0.5,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 28,
-                                    height: 28,
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? AppTheme.primaryGreen
-                                          : AppTheme.borderColor,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      q.labels[i],
-                                      style: TextStyle(
-                                        color: isSelected
-                                            ? Colors.white
-                                            : AppTheme.textSecondary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      q.options[i],
-                                      style: TextStyle(
-                                        color: isSelected
-                                            ? AppTheme.textPrimary
-                                            : isLocked
-                                                ? AppTheme.textSecondary.withOpacity(0.6)
-                                                : AppTheme.textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                    ],
+          actions: [
+            Consumer<McqProvider>(
+              builder: (_, mcq, __) => Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Center(
+                  child: Text(
+                    '${mcq.answeredCount}/${mcq.totalQuestions}',
+                    style: const TextStyle(
+                        color: AppTheme.primaryGreen,
+                        fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
-              _buildBottomBar(mcq),
-            ],
-          );
-        },
+            ),
+            IconButton(
+              icon: const Icon(Icons.grid_view),
+              onPressed: () => _showNavigator(context),
+            ),
+          ],
+        ),
+        body: Consumer<McqProvider>(
+          builder: (context, mcq, _) {
+            if (mcq.questions.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final idx = mcq.currentIndex;
+            final q = mcq.questions[idx];
+
+            return Column(
+              children: [
+                _buildTimerBar(mcq),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Subject / Topic labels
+                        if (q.subject.isNotEmpty)
+                          Text(
+                            q.subject,
+                            style: const TextStyle(
+                              color: AppTheme.primaryGreen,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        if (q.topic.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              q.topic,
+                              style: const TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 16),
+
+                        Text(
+                          q.question,
+                          style: const TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w500,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ...List.generate(4, (i) {
+                          final isSelected = mcq.answers[idx] == i;
+                          final isLocked = mcq.locked[idx];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: InkWell(
+                              onTap: isLocked ? null : () => mcq.selectAnswer(idx, i),
+                              child: Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? AppTheme.primaryGreen.withOpacity(0.15)
+                                      : AppTheme.surfaceElevated,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? AppTheme.primaryGreen
+                                        : isLocked
+                                            ? AppTheme.borderColor.withOpacity(0.5)
+                                            : AppTheme.borderColor,
+                                    width: isSelected ? 1.5 : 0.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 28,
+                                      height: 28,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? AppTheme.primaryGreen
+                                            : AppTheme.borderColor,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        q.labels[i],
+                                        style: TextStyle(
+                                          color: isSelected
+                                              ? Colors.white
+                                              : AppTheme.textSecondary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        q.options[i],
+                                        style: TextStyle(
+                                          color: isSelected
+                                              ? AppTheme.textPrimary
+                                              : isLocked
+                                                  ? AppTheme.textSecondary.withOpacity(0.6)
+                                                  : AppTheme.textPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                ),
+                _buildBottomBar(mcq),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildTimerBar(int remaining, McqProvider mcq) {
-    final isWarning = remaining <= 10;
-    final isCaution = remaining <= 20 && !isWarning;
+  Widget _buildTimerBar(McqProvider mcq) {
+    // Timer color: green → amber at 20% → red at 10%
+    final totalExamTime = mcq.totalQuestions * mcq.timePerQuestion;
+    final pct = totalExamTime > 0 ? _totalSecondsRemaining / totalExamTime : 0.0;
+    final isWarning = pct <= 0.10;
+    final isCaution = pct <= 0.20 && !isWarning;
+    final timerColor = isWarning
+        ? AppTheme.errorRed
+        : isCaution
+            ? AppTheme.warningAmber
+            : AppTheme.primaryGreen;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       color: AppTheme.surfaceElevated,
       child: Row(
         children: [
-          Icon(Icons.timer,
-              color: isWarning
-                  ? AppTheme.errorRed
-                  : isCaution
-                      ? AppTheme.warningAmber
-                      : AppTheme.primaryGreen,
-              size: 18),
+          Icon(Icons.timer, color: timerColor, size: 18),
           const SizedBox(width: 6),
           Text(
-            '${(remaining ~/ 60).toString().padLeft(2, '0')}:${(remaining % 60).toString().padLeft(2, '0')}',
+            '${(_totalSecondsRemaining ~/ 60).toString().padLeft(2, '0')}:${(_totalSecondsRemaining % 60).toString().padLeft(2, '0')}',
             style: TextStyle(
-              color: isWarning
-                  ? AppTheme.errorRed
-                  : isCaution
-                      ? AppTheme.warningAmber
-                      : AppTheme.textPrimary,
+              color: timerColor,
               fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
           ),
           const Spacer(),
+          // Numbered progress pills
           Row(
             children: List.generate(mcq.totalQuestions, (i) {
+              final isCurrent = i == mcq.currentIndex;
+              final isAnswered = mcq.answers[i] != null;
               Color c;
-              if (mcq.locked[i]) {
+              if (isCurrent) {
                 c = AppTheme.primaryGreen;
-              } else if (mcq.answers[i] != null) {
-                c = AppTheme.infoBlue;
-              } else if (mcq.markedForReview.contains(i)) {
-                c = AppTheme.warningAmber;
+              } else if (mcq.locked[i] || isAnswered) {
+                c = AppTheme.primaryGreen.withOpacity(0.2);
               } else {
                 c = AppTheme.borderColor;
               }
-              return Container(
-                width: 6,
-                height: 6,
-                margin: const EdgeInsets.symmetric(horizontal: 1),
-                decoration: BoxDecoration(
-                  color: c,
-                  borderRadius: BorderRadius.circular(1),
+              return GestureDetector(
+                onTap: () => mcq.goToQuestion(i),
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  decoration: BoxDecoration(
+                    color: c,
+                    borderRadius: BorderRadius.circular(6),
+                    border: isCurrent
+                        ? Border.all(color: AppTheme.primaryGreen, width: 1.5)
+                        : null,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '${i + 1}',
+                    style: TextStyle(
+                      color: isCurrent
+                          ? Colors.white
+                          : mcq.locked[i] || isAnswered
+                              ? AppTheme.primaryGreen
+                              : AppTheme.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               );
             }),
@@ -311,8 +371,10 @@ class _McqExamScreenState extends State<McqExamScreen> {
   }
 
   Widget _buildBottomBar(McqProvider mcq) {
+    final isLast = mcq.currentIndex == mcq.totalQuestions - 1;
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
       decoration: BoxDecoration(
         color: AppTheme.surfaceElevated,
         border: Border(top: BorderSide(color: AppTheme.borderColor)),
@@ -320,11 +382,15 @@ class _McqExamScreenState extends State<McqExamScreen> {
       child: SafeArea(
         child: Row(
           children: [
-            IconButton(
-              onPressed: mcq.currentIndex > 0 ? mcq.previousQuestion : null,
-              icon: const Icon(Icons.chevron_left),
-              color: AppTheme.textPrimary,
+            // Previous button
+            _navButton(
+              icon: Icons.chevron_left,
+              enabled: mcq.currentIndex > 0,
+              onTap: mcq.previousQuestion,
             ),
+            const SizedBox(width: 8),
+
+            // Review / Flag button
             TextButton.icon(
               onPressed: () => mcq.toggleMarkForReview(mcq.currentIndex),
               icon: Icon(
@@ -334,37 +400,78 @@ class _McqExamScreenState extends State<McqExamScreen> {
                 color: mcq.markedForReview.contains(mcq.currentIndex)
                     ? AppTheme.warningAmber
                     : AppTheme.textSecondary,
+                size: 18,
               ),
               label: Text(
                 mcq.markedForReview.contains(mcq.currentIndex)
                     ? 'Flagged'
-                    : 'Flag',
+                    : 'Review',
                 style: TextStyle(
                   color: mcq.markedForReview.contains(mcq.currentIndex)
                       ? AppTheme.warningAmber
                       : AppTheme.textSecondary,
+                  fontSize: 13,
                 ),
               ),
             ),
-            IconButton(
-              onPressed: mcq.currentIndex < mcq.totalQuestions - 1
-                  ? mcq.nextQuestion
-                  : null,
-              icon: const Icon(Icons.chevron_right),
-              color: AppTheme.textPrimary,
-            ),
+
             const Spacer(),
-            ElevatedButton(
-              onPressed: mcq.answeredCount > 0
-                  ? () => _showSubmitDialog(mcq)
-                  : null,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+
+            // Next (green bg) or Submit
+            if (!isLast)
+              _navButton(
+                icon: Icons.chevron_right,
+                enabled: true,
+                onTap: mcq.nextQuestion,
+                isGreen: true,
+              )
+            else
+              SizedBox(
+                height: 44,
+                child: ElevatedButton(
+                  onPressed: mcq.answeredCount > 0
+                      ? () => _showSubmitDialog(mcq)
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryGreen,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text('Submit',
+                      style: TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w700)),
+                ),
               ),
-              child: const Text('Submit', style: TextStyle(fontSize: 12)),
-            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _navButton({
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
+    bool isGreen = false,
+  }) {
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: IconButton(
+        onPressed: enabled ? onTap : null,
+        icon: Icon(icon, size: 22),
+        color: isGreen ? AppTheme.primaryGreen : AppTheme.textPrimary,
+        style: isGreen
+            ? IconButton.styleFrom(
+                backgroundColor: AppTheme.primaryGreen.withOpacity(0.12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              )
+            : null,
       ),
     );
   }
@@ -373,72 +480,155 @@ class _McqExamScreenState extends State<McqExamScreen> {
     final mcq = context.read<McqProvider>();
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.surfaceElevated,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
+        return Container(
+          decoration: const BoxDecoration(
+            color: AppTheme.card,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border(top: BorderSide(color: AppTheme.borderColor)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Question Navigator',
-                  style: TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontWeight: FontWeight.w600)),
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.textTertiary.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
               const SizedBox(height: 16),
+              const Text(
+                'Question Navigator',
+                style: TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Question number grid — green if answered, gray if not
               Wrap(
-                spacing: 6,
-                runSpacing: 6,
+                spacing: 8,
+                runSpacing: 8,
                 children: List.generate(mcq.totalQuestions, (i) {
-                  Color c;
-                  if (mcq.locked[i]) {
-                    c = AppTheme.primaryGreen;
-                  } else if (mcq.answers[i] != null) {
-                    c = AppTheme.infoBlue;
-                  } else if (mcq.markedForReview.contains(i)) {
-                    c = AppTheme.warningAmber;
-                  } else {
-                    c = AppTheme.borderColor;
-                  }
-                  return InkWell(
+                  final isAnswered = mcq.answers[i] != null;
+                  final isCurrent = i == mcq.currentIndex;
+                  final isMarked = mcq.markedForReview.contains(i);
+
+                  return GestureDetector(
                     onTap: () {
                       mcq.goToQuestion(i);
                       Navigator.pop(context);
                     },
-                    child: Container(
-                      width: 40,
-                      height: 40,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      width: 44,
+                      height: 44,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: i == mcq.currentIndex
-                            ? c
-                            : c.withOpacity(0.3),
+                        color: isCurrent
+                            ? AppTheme.primaryGreen
+                            : isMarked
+                                ? AppTheme.warningAmber.withOpacity(0.2)
+                                : isAnswered || mcq.locked[i]
+                                    ? AppTheme.primaryGreen.withOpacity(0.15)
+                                    : AppTheme.surfaceHigher,
                         borderRadius: BorderRadius.circular(8),
-                        border: i == mcq.currentIndex
-                            ? Border.all(color: Colors.white, width: 2)
-                            : null,
-                      ),
-                      child: Text(
-                        '${i + 1}',
-                        style: TextStyle(
-                          color: i == mcq.currentIndex
-                              ? Colors.white
-                              : AppTheme.textPrimary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
+                        border: Border.all(
+                          color: isCurrent
+                              ? AppTheme.primaryGreen
+                              : isMarked
+                                  ? AppTheme.warningAmber.withOpacity(0.5)
+                                  : Colors.transparent,
+                          width: 1.5,
                         ),
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Text(
+                            '${i + 1}',
+                            style: TextStyle(
+                              color: isCurrent
+                                  ? Colors.white
+                                  : isMarked
+                                      ? AppTheme.warningAmber
+                                      : isAnswered || mcq.locked[i]
+                                          ? AppTheme.primaryGreen
+                                          : AppTheme.textSecondary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          if (isMarked)
+                            Positioned(
+                              top: 2,
+                              right: 2,
+                              child: Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: AppTheme.warningAmber,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   );
                 }),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+
+              // Legend
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _legendDot(AppTheme.primaryGreen, 'Answered'),
+                  const SizedBox(width: 16),
+                  _legendDot(AppTheme.warningAmber, 'Marked'),
+                  const SizedBox(width: 16),
+                  _legendDot(AppTheme.surfaceHigher, 'Unanswered'),
+                ],
+              ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _legendDot(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 11,
+          ),
+        ),
+      ],
     );
   }
 
@@ -472,7 +662,6 @@ class _McqExamScreenState extends State<McqExamScreen> {
             child: const Text('Submit'),
           ),
         ],
-      ),
       ),
     );
   }
