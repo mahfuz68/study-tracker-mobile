@@ -301,3 +301,293 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 }
+
+// ── LOGOUT BOTTOM SHEET ──────────────────────────────────────────
+// Same design as the exit bottom sheet: dark bg, orbit animation,
+// heavy title / light body, stacked buttons. The icon pulses with
+// a green glow; "Stay Signed In" is the primary action, "Sign Out"
+// is the quiet ghost action below.
+// Palette: bg #0E0E1C · card #1C1C32 · brand #00C896 · red #FF5A5A
+// muted #A0A0C0
+
+class _LogoutBottomSheet extends StatefulWidget {
+  const _LogoutBottomSheet();
+
+  @override
+  State<_LogoutBottomSheet> createState() => _LogoutBottomSheetState();
+}
+
+class _LogoutBottomSheetState extends State<_LogoutBottomSheet>
+    with TickerProviderStateMixin {
+  late final AnimationController _orbitCtrl;
+  late final AnimationController _pulseCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _orbitCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _orbitCtrl.dispose();
+    _pulseCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).viewInsets.bottom;
+
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 250),
+      padding: EdgeInsets.only(bottom: bottomPad),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF0E0E1C),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          border: Border(
+            top: BorderSide(color: Color(0xFF1C1C32), width: 1),
+          ),
+        ),
+        padding: const EdgeInsets.fromLTRB(28, 20, 28, 36),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── drag handle ──────────────────────────────
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFA0A0C0).withOpacity(0.35),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              // ── orbit / streak icon ─────────────────────
+              SizedBox(
+                width: 110,
+                height: 110,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Pulse glow
+                    AnimatedBuilder(
+                      animation: _pulseCtrl,
+                      builder: (_, __) {
+                        final opacity = 0.18 + 0.14 * _pulseCtrl.value;
+                        return Container(
+                          width: 88,
+                          height: 88,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF00C896)
+                                    .withOpacity(opacity),
+                                blurRadius: 36,
+                                spreadRadius: 8,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    // Orbit arcs
+                    AnimatedBuilder(
+                      animation: _orbitCtrl,
+                      builder: (_, __) {
+                        return CustomPaint(
+                          size: const Size(100, 100),
+                          painter: _OrbitPainter(_orbitCtrl.value),
+                        );
+                      },
+                    ),
+                    // Central icon
+                    Container(
+                      width: 54,
+                      height: 54,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF00C896), Color(0xFF00996B)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                const Color(0xFF00C896).withOpacity(0.45),
+                            blurRadius: 20,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.logout_rounded,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // ── title ───────────────────────────────────
+              const Text(
+                'Sign out?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFFF0F0F0),
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // ── body ────────────────────────────────────
+              Text(
+                'Your streak will pause until you\nsign in again.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: const Color(0xFFA0A0C0).withOpacity(0.85),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  height: 1.55,
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // ── "Stay Signed In" button (primary green) ─
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00C896),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Stay Signed In',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // ── "Sign Out" button (ghost) ───────────────
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFA0A0C0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Sign Out',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.1,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── ORBIT PAINTER ──────────────────────────────────────────────
+// Same painter used by the exit sheet — draws two glowing arcs
+// rotating around a centre point.
+class _OrbitPainter extends CustomPainter {
+  final double progress;
+  _OrbitPainter(this.progress);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final radius = size.width / 2 - 4;
+
+    final paint1 = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round
+      ..shader = SweepGradient(
+        startAngle: 0,
+        endAngle: pi * 0.7,
+        colors: const [
+          Color(0x0000C896),
+          Color(0xFF00C896),
+          Color(0x0000C896),
+        ],
+      ).createShader(
+          Rect.fromCircle(center: Offset(cx, cy), radius: radius));
+
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(cx, cy), radius: radius),
+      progress * 2 * pi,
+      pi * 0.7,
+      false,
+      paint1,
+    );
+
+    final paint2 = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round
+      ..shader = SweepGradient(
+        startAngle: 0,
+        endAngle: pi * 0.4,
+        colors: const [
+          Color(0x0000C896),
+          Color(0x8800C896),
+          Color(0x0000C896),
+        ],
+      ).createShader(
+          Rect.fromCircle(center: Offset(cx, cy), radius: radius));
+
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(cx, cy), radius: radius),
+      progress * 2 * pi + pi,
+      pi * 0.4,
+      false,
+      paint2,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_OrbitPainter old) => old.progress != progress;
+}
