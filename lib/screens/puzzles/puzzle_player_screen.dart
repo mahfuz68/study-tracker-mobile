@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
+import '../../models/puzzle_question.dart';
 import '../../providers/puzzle_provider.dart';
 
 class PuzzlePlayerScreen extends StatefulWidget {
@@ -292,52 +293,281 @@ class _PuzzlePlayerScreenState extends State<PuzzlePlayerScreen> {
   }
 
   Widget _buildResults(PuzzleProvider provider, dynamic attempt) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              attempt.passed == true
-                  ? Icons.emoji_events
-                  : Icons.replay,
-              color: attempt.passed == true
-                  ? AppTheme.successGreen
-                  : AppTheme.errorRed,
-              size: 64,
+    final puzzle = provider.currentPuzzle;
+    final answers = attempt.answers ?? [];
+    final questions = puzzle?.questions ?? [];
+
+    // Build a map of questionId -> selectedOptionId from attempt answers
+    final answerMap = {for (final a in answers) a.questionId: a.selectedOptionId};
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // ── Score header ──
+        Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: attempt.passed == true
+                  ? [
+                      AppTheme.successGreen.withOpacity(0.2),
+                      AppTheme.successGreen.withOpacity(0.05),
+                    ]
+                  : [
+                      AppTheme.errorRed.withOpacity(0.2),
+                      AppTheme.errorRed.withOpacity(0.05),
+                    ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              attempt.passed == true ? 'Solved!' : 'Try Again',
-              style: TextStyle(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: attempt.passed == true
+                  ? AppTheme.successGreen.withOpacity(0.3)
+                  : AppTheme.errorRed.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                attempt.passed == true
+                    ? Icons.emoji_events
+                    : Icons.sentiment_dissatisfied,
                 color: attempt.passed == true
                     ? AppTheme.successGreen
                     : AppTheme.errorRed,
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
+                size: 56,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                attempt.passed == true ? 'Congratulations!' : 'Not passed',
+                style: TextStyle(
+                  color: attempt.passed == true
+                      ? AppTheme.successGreen
+                      : AppTheme.errorRed,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Score: ${attempt.score?.toStringAsFixed(2) ?? "N/A"} · ${attempt.correct}/${attempt.total} correct',
+                style: const TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // ── Stats row ──
+        Row(
+          children: [
+            _statBox('Total', '${attempt.total}', AppTheme.textPrimary),
+            _statBox('Correct', '${attempt.correct}', AppTheme.successGreen),
+            _statBox('Wrong', '${attempt.wrong}', AppTheme.errorRed),
+            _statBox('Skipped', '${attempt.skipped}', AppTheme.warningAmber),
+          ],
+        ),
+        const SizedBox(height: 28),
+
+        // ── Answer Review header ──
+        const Text(
+          'Answer Review',
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // ── Per-question review ──
+        ...List.generate(questions.length, (index) {
+          final q = questions[index];
+          final selectedOptionId = answerMap[q.id];
+          final isSkipped = selectedOptionId == null;
+
+          // Find the selected option
+          PuzzleOption? selectedOpt;
+          for (final opt in q.options) {
+            if (opt.id == selectedOptionId) selectedOpt = opt;
+          }
+
+          final isCorrect = selectedOpt?.isCorrect ?? false;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceElevated,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSkipped
+                    ? AppTheme.warningAmber.withOpacity(0.3)
+                    : isCorrect
+                        ? AppTheme.successGreen.withOpacity(0.3)
+                        : AppTheme.errorRed.withOpacity(0.3),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              '${attempt.correct}/${attempt.total} correct • Score: ${attempt.score?.toStringAsFixed(1) ?? "N/A"}',
-              style: const TextStyle(
-                  color: AppTheme.textSecondary, fontSize: 14)),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                context.read<PuzzleProvider>().reset();
-                context
-                    .read<PuzzleProvider>()
-                    .loadPuzzleDetail(widget.puzzleId);
-              },
-              child: const Text('Retry'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Question header with status icon
+                Row(
+                  children: [
+                    Icon(
+                      isSkipped
+                          ? Icons.skip_next
+                          : isCorrect
+                              ? Icons.check_circle
+                              : Icons.cancel,
+                      color: isSkipped
+                          ? AppTheme.warningAmber
+                          : isCorrect
+                              ? AppTheme.successGreen
+                              : AppTheme.errorRed,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Q${q.position}. ${q.text}',
+                        style: const TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // Options list
+                ...q.options.map((opt) {
+                  final isSelected = opt.id == selectedOptionId;
+                  final isAnswer = opt.isCorrect;
+
+                  Color dotColor;
+                  if (isAnswer) {
+                    dotColor = AppTheme.successGreen;
+                  } else if (isSelected && !isCorrect) {
+                    dotColor = AppTheme.errorRed;
+                  } else {
+                    dotColor = AppTheme.borderColor;
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: dotColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            '${opt.label}. ${opt.text}',
+                            style: TextStyle(
+                              color: isSelected || isAnswer
+                                  ? AppTheme.textPrimary
+                                  : AppTheme.textSecondary,
+                              fontWeight: isSelected || isAnswer
+                                  ? FontWeight.w500
+                                  : FontWeight.w400,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        if (isAnswer)
+                          const Icon(Icons.check,
+                              color: AppTheme.successGreen, size: 16),
+                        if (isSelected && !isCorrect)
+                          const Icon(Icons.close,
+                              color: AppTheme.errorRed, size: 16),
+                      ],
+                    ),
+                  );
+                }),
+
+                // Explanation
+                if (q.explanation != null && q.explanation!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.infoBlue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      q.explanation!,
+                      style: const TextStyle(
+                        color: AppTheme.infoBlue,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Back to List'),
-            ),
+          );
+        }),
+
+        const SizedBox(height: 20),
+
+        // ── Action buttons ──
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () {
+              context.read<PuzzleProvider>().reset();
+              context
+                  .read<PuzzleProvider>()
+                  .loadPuzzleDetail(widget.puzzleId);
+            },
+            child: const Text('Retry', style: TextStyle(fontSize: 16)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Back to List'),
+          ),
+        ),
+        const SizedBox(height: 32),
+      ],
+    );
+  }
+
+  Widget _statBox(String label, String value, Color color) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 3),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceElevated,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          children: [
+            Text(value,
+                style: TextStyle(
+                    color: color,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(label,
+                style: const TextStyle(
+                    color: AppTheme.textSecondary, fontSize: 11)),
           ],
         ),
       ),
