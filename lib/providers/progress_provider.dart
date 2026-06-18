@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import '../models/progress.dart';
 import '../models/study_day.dart';
 import '../services/progress_service.dart';
+import '../services/cache_service.dart';
 
 class ProgressProvider extends ChangeNotifier {
   final ProgressService _service = ProgressService();
+  final CacheService _cache;
+
+  ProgressProvider(this._cache);
   List<StudyDay> _studyPlan = [];
   /// All progress rows for the current user across every day. Populated
   /// by [loadStudyPlan] (which now also returns progresses).
@@ -113,16 +117,49 @@ class ProgressProvider extends ChangeNotifier {
   }
 
   Future<void> loadStudyPlan() async {
-    _isLoading = true;
-    notifyListeners();
+    // 1. Show cached data instantly
+    final cached = await _cache.get('study_plan');
+    if (cached != null) {
+      final daysJson = (cached['days'] as List<dynamic>?) ?? const [];
+      _studyPlan = daysJson
+          .map((d) => StudyDay.fromJson(d as Map<String, dynamic>))
+          .toList();
+      final progJson = (cached['progresses'] as List<dynamic>?) ?? const [];
+      _allProgress = progJson
+          .map((p) => Progress.fromJson(p as Map<String, dynamic>))
+          .toList();
+      _error = null;
+      notifyListeners();
+    }
 
+    // 2. Fetch fresh data in background
     try {
+      _isLoading = true;
+      notifyListeners();
       final summary = await _service.getStudyPlan();
       _studyPlan = summary.days;
       _allProgress = summary.allProgress;
+      // Cache the raw response for next time
+      await _cache.set('study_plan', {
+        'days': summary.days.map((d) => {
+          'id': d.id,
+          'dayNumber': d.dayNumber,
+          'label': d.label,
+          'date': d.date,
+          'topics': d.topics.map((t) => {
+            'id': t.id,
+            'studyDayId': t.studyDayId,
+            'subject': t.subject,
+            'topic': t.topic,
+            'durationMin': t.durationMin,
+            'order': t.order,
+          }).toList(),
+        }).toList(),
+        'progresses': summary.allProgress.map((p) => p.toJson()).toList(),
+      });
       _error = null;
     } catch (e) {
-      _error = e.toString();
+      if (_studyPlan.isEmpty) _error = e.toString();
     }
 
     _isLoading = false;
@@ -131,18 +168,30 @@ class ProgressProvider extends ChangeNotifier {
 
   Future<void> loadDayProgress(int dayNumber) async {
     _currentDay = dayNumber;
-    _isLoading = true;
-    notifyListeners();
 
-    try {
-      _currentProgress = await _service.getDayProgress(dayNumber);
-      // Merge day-level progress into the all-days collection so that
-      // completionRate stays accurate after a toggle without a full
-      // refetch of the study plan.
+    // 1. Show cached data instantly
+    final cached = await _cache.get('day_$dayNumber');
+    if (cached != null) {
+      _currentProgress = (cached['data'] as List<dynamic>?)
+              ?.map((p) => Progress.fromJson(p))
+              .toList() ??
+          [];
       _mergeProgress(_currentProgress);
+      notifyListeners();
+    }
+
+    // 2. Fetch fresh data in background
+    try {
+      _isLoading = true;
+      notifyListeners();
+      _currentProgress = await _service.getDayProgress(dayNumber);
+      _mergeProgress(_currentProgress);
+      await _cache.set('day_$dayNumber', {
+        'data': _currentProgress.map((p) => p.toJson()).toList(),
+      });
       _error = null;
     } catch (e) {
-      _error = e.toString();
+      if (_currentProgress.isEmpty) _error = e.toString();
     }
 
     _isLoading = false;

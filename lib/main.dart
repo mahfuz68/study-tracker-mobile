@@ -22,7 +22,7 @@ void main() async {
       providers: [
         Provider<CacheService>.value(value: cacheService),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ProgressProvider()),
+        ChangeNotifierProvider(create: (ctx) => ProgressProvider(ctx.read<CacheService>())),
         ChangeNotifierProvider(create: (_) => McqProvider()),
         ChangeNotifierProvider(create: (_) => PuzzleProvider()),
         ChangeNotifierProvider(create: (_) => NavigationController()),
