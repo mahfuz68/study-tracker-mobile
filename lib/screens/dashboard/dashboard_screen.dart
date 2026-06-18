@@ -4,8 +4,11 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../models/study_day.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/mcq_provider.dart';
 import '../../providers/navigation_controller.dart';
+import '../../providers/puzzle_provider.dart';
 import '../../providers/progress_provider.dart';
+import '../../services/cache_service.dart';
 import '../../widgets/day_selector.dart';
 import '../../widgets/progress_bar.dart';
 import '../../widgets/topic_row.dart';
@@ -26,7 +29,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _initialLoad() async {
     final provider = context.read<ProgressProvider>();
-    await provider.loadStudyPlan();
+    final cache = context.read<CacheService>();
+
+    // Check if daily cache bust is needed (4:00 AM threshold)
+    if (await cache.shouldBustDailyCache()) {
+      // Force background refresh of all cached data
+      await Future.wait([
+        provider.loadStudyPlan(),
+        context.read<McqProvider>().loadSubjects(),
+        context.read<PuzzleProvider>().loadPuzzles(),
+      ]);
+      await cache.markDailyCacheBusted();
+    } else {
+      await provider.loadStudyPlan();
+    }
     if (!mounted) return;
     // Auto-select the latest day whose date is on or before today.
     final pick = provider.latestDayOnOrBefore(DateTime.now());

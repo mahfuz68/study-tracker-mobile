@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import '../models/question.dart';
 import '../models/mcq_attempt.dart';
 import '../services/mcq_service.dart';
+import '../services/cache_service.dart';
 
 enum ExamStatus { setup, running, reviewing, completed }
 
 class McqProvider extends ChangeNotifier {
   final McqService _service = McqService();
+  final CacheService _cache;
+
+  McqProvider(this._cache);
 
   ExamStatus _status = ExamStatus.setup;
   List<Question> _questions = [];
@@ -222,16 +226,26 @@ class McqProvider extends ChangeNotifier {
   /// Fetch the list of distinct subjects from the backend. Called once
   /// when the MCQ setup screen mounts.
   Future<void> loadSubjects() async {
-    _subjectsLoading = true;
-    notifyListeners();
-    try {
-      _subjects = await _service.getSubjects();
-    } catch (e) {
-      _error = e.toString();
-    } finally {
+    // 1. Show cached data instantly
+    final cached = await _cache.get('mcq_subjects', ttl: const Duration(days: 7));
+    if (cached != null) {
+      _subjects = (cached['data'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
       _subjectsLoading = false;
       notifyListeners();
     }
+
+    // 2. Fetch fresh data in background
+    try {
+      _subjectsLoading = true;
+      notifyListeners();
+      _subjects = await _service.getSubjects();
+      await _cache.set('mcq_subjects', {'data': _subjects});
+    } catch (e) {
+      if (_subjects.isEmpty) _error = e.toString();
+    }
+
+    _subjectsLoading = false;
+    notifyListeners();
   }
 
   /// Re-fetch the topic list for the given [subject]. Called when the
@@ -241,13 +255,28 @@ class McqProvider extends ChangeNotifier {
     _selectedSubject = subject;
     _selectedTopic = null;
     _topics = [];
-    _topicsLoading = true;
-    notifyListeners();
+
+    // 1. Show cached data instantly
+    final cached = await _cache.get('mcq_topics_$subject', ttl: const Duration(days: 7));
+    if (cached != null) {
+      _topics = (cached['data'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+      _topicsLoading = false;
+      notifyListeners();
+    }
+
+    // 2. Fetch fresh data in background
     try {
+      _topicsLoading = true;
+      notifyListeners();
       _topics = await _service.getTopics(subject: subject);
+      await _cache.set('mcq_topics_$subject', {'data': _topics});
     } catch (e) {
-      _error = e.toString();
-    } finally {
+      if (_topics.isEmpty) _error = e.toString();
+    }
+
+    _topicsLoading = false;
+    notifyListeners();
+  }
       _topicsLoading = false;
       notifyListeners();
     }

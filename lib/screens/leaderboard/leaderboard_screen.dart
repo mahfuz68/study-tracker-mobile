@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../models/leaderboard_entry.dart';
+import '../../services/cache_service.dart';
 import '../../services/leaderboard_service.dart';
 
 class LeaderboardScreen extends StatefulWidget {
@@ -27,10 +29,41 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       _loading = true;
       _error = null;
     });
+
+    final cache = context.read<CacheService>();
+
+    // 1. Show cached data instantly
+    final cached = await cache.get('leaderboard', ttl: const Duration(hours: 6));
+    if (cached != null) {
+      final totalTopics = cached['totalTopics'] as int? ?? 0;
+      _entries = (cached['rows'] as List<dynamic>?)?.map((r) {
+        final row = r as Map<String, dynamic>;
+        return LeaderboardEntry(
+          userId: row['name'] as String? ?? '',
+          name: row['name'] as String? ?? '',
+          completedCount: row['completed'] as int? ?? 0,
+          totalTopics: totalTopics,
+          completionRate: totalTopics > 0
+              ? ((row['rate'] as num?)?.toDouble() ?? 0) / 100.0
+              : 0.0,
+        );
+      }).toList();
+      if (mounted) setState(() => _loading = false);
+    }
+
+    // 2. Fetch fresh data in background
     try {
       _entries = await _service.getLeaderboard();
+      await cache.set('leaderboard', {
+        'rows': _entries!.map((e) => {
+          'name': e.name,
+          'completed': e.completedCount,
+          'rate': e.completionRate * 100,
+        }).toList(),
+        'totalTopics': _entries!.isNotEmpty ? _entries!.first.totalTopics : 0,
+      });
     } catch (e) {
-      _error = e.toString();
+      if (_entries == null) _error = e.toString();
     }
     if (mounted) setState(() => _loading = false);
   }

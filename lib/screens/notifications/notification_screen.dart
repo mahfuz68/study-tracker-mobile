@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../config/theme.dart';
+import '../../services/cache_service.dart';
 import '../../services/notification_service.dart';
 
 class NotificationScreen extends StatefulWidget {
@@ -22,11 +24,29 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Future<void> _loadNotifications() async {
     setState(() => _isLoading = true);
-    final notifications = await _service.getNotifications();
-    setState(() {
-      _notifications = notifications;
-      _isLoading = false;
-    });
+
+    final cache = context.read<CacheService>();
+
+    // 1. Show cached data instantly
+    final cached = await cache.get('notifications', ttl: const Duration(hours: 1));
+    if (cached != null) {
+      _notifications = (cached['data'] as List<dynamic>?)
+              ?.map((n) => Map<String, dynamic>.from(n))
+              .toList() ??
+          [];
+      if (mounted) setState(() => _isLoading = false);
+    }
+
+    // 2. Fetch fresh data in background
+    try {
+      _notifications = await _service.getNotifications();
+      await cache.set('notifications', {
+        'data': _notifications,
+      });
+    } catch (e) {
+      // Keep showing cached data on error
+    }
+    if (mounted) setState(() => _isLoading = false);
   }
 
   @override

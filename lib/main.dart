@@ -6,22 +6,25 @@ import 'providers/mcq_provider.dart';
 import 'providers/puzzle_provider.dart';
 import 'providers/navigation_controller.dart';
 import 'providers/admin_provider.dart';
+import 'services/cache_service.dart';
 import 'services/notification_service.dart';
 import 'app.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize notification service
+  // Initialize services
   await NotificationService().initialize();
+  final cacheService = await CacheService.create();
 
   runApp(
     MultiProvider(
       providers: [
+        Provider<CacheService>.value(value: cacheService),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ProgressProvider()),
-        ChangeNotifierProvider(create: (_) => McqProvider()),
-        ChangeNotifierProvider(create: (_) => PuzzleProvider()),
+        ChangeNotifierProvider(create: (ctx) => ProgressProvider(ctx.read<CacheService>())),
+        ChangeNotifierProvider(create: (ctx) => McqProvider(ctx.read<CacheService>())),
+        ChangeNotifierProvider(create: (ctx) => PuzzleProvider(ctx.read<CacheService>())),
         ChangeNotifierProvider(create: (_) => NavigationController()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
       ],
