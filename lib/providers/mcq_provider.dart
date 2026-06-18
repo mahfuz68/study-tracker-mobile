@@ -150,6 +150,16 @@ class McqProvider extends ChangeNotifier {
         subject: subject,
         topic: topic,
       );
+
+      // Fetch full attempt detail so the result screen can show answer review
+      if (_lastAttempt != null && _lastAttempt!.id > 0) {
+        try {
+          _lastAttempt = await _service.getAttemptDetail(_lastAttempt!.id);
+        } catch (_) {
+          // If detail fetch fails, still show the basic result
+        }
+      }
+
       _status = ExamStatus.completed;
       _error = null;
     } catch (e) {
