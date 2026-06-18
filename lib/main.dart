@@ -24,7 +24,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (ctx) => ProgressProvider(ctx.read<CacheService>())),
         ChangeNotifierProvider(create: (ctx) => McqProvider(ctx.read<CacheService>())),
-        ChangeNotifierProvider(create: (_) => PuzzleProvider()),
+        ChangeNotifierProvider(create: (ctx) => PuzzleProvider(ctx.read<CacheService>())),
         ChangeNotifierProvider(create: (_) => NavigationController()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
       ],
