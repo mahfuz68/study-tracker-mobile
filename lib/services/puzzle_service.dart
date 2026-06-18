@@ -106,4 +106,24 @@ class PuzzleService {
   Future<void> deletePuzzle(String id) async {
     await _api.delete('/api/admin/puzzles/$id');
   }
+
+  Future<PuzzleAttempt> getAttemptDetail(String attemptId) async {
+    final data = await _api.get('/api/puzzles/attempts/$attemptId');
+    return PuzzleAttempt(
+      id: data['id'] ?? '',
+      puzzleId: data['puzzleId'] ?? '',
+      userId: data['userId'] ?? '',
+      startedAt: data['startedAt'] ?? '',
+      submittedAt: data['submittedAt'],
+      total: data['total'] ?? 0,
+      correct: data['correct'] ?? 0,
+      wrong: data['wrong'] ?? 0,
+      skipped: data['skipped'] ?? 0,
+      score: (data['score'] as num?)?.toDouble(),
+      passed: data['passed'],
+      answers: (data['answers'] as List<dynamic>?)
+          ?.map((a) => PuzzleAnswer.fromJson(a))
+          .toList(),
+    );
+  }
 }

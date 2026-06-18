@@ -118,12 +118,14 @@ class PuzzleAnswer {
   final String attemptId;
   final String questionId;
   final String? selectedOptionId;
+  final PuzzleQuestion? question;
 
   PuzzleAnswer({
     required this.id,
     required this.attemptId,
     required this.questionId,
     this.selectedOptionId,
+    this.question,
   });
 
   factory PuzzleAnswer.fromJson(Map<String, dynamic> json) {
@@ -132,6 +134,9 @@ class PuzzleAnswer {
       attemptId: json['attemptId'] ?? '',
       questionId: json['questionId'] ?? '',
       selectedOptionId: json['selectedOptionId'],
+      question: json['question'] != null
+          ? PuzzleQuestion.fromJson(json['question'])
+          : null,
     );
   }
 }

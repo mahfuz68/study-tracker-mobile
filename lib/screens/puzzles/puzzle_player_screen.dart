@@ -293,12 +293,7 @@ class _PuzzlePlayerScreenState extends State<PuzzlePlayerScreen> {
   }
 
   Widget _buildResults(PuzzleProvider provider, dynamic attempt) {
-    final puzzle = provider.currentPuzzle;
     final answers = attempt.answers ?? [];
-    final questions = puzzle?.questions ?? [];
-
-    // Build a map of questionId -> selectedOptionId from attempt answers
-    final answerMap = {for (final a in answers) a.questionId: a.selectedOptionId};
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -383,16 +378,20 @@ class _PuzzlePlayerScreenState extends State<PuzzlePlayerScreen> {
         ),
         const SizedBox(height: 14),
 
-        // ── Per-question review ──
-        ...List.generate(questions.length, (index) {
-          final q = questions[index];
-          final selectedOptionId = answerMap[q.id];
+        // ── Per-question review (from answers, includes skipped) ──
+        ...answers.map((ans) {
+          final q = ans.question;
+          if (q == null) return const SizedBox.shrink();
+
+          final selectedOptionId = ans.selectedOptionId;
           final isSkipped = selectedOptionId == null;
 
           // Find the selected option
           PuzzleOption? selectedOpt;
-          for (final opt in q.options) {
-            if (opt.id == selectedOptionId) selectedOpt = opt;
+          if (selectedOptionId != null) {
+            for (final opt in q.options) {
+              if (opt.id == selectedOptionId) selectedOpt = opt;
+            }
           }
 
           final isCorrect = selectedOpt?.isCorrect ?? false;
