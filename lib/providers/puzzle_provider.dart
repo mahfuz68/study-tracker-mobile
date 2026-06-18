@@ -68,7 +68,6 @@ class PuzzleProvider extends ChangeNotifier {
 
     try {
       final answers = _selectedOptions.entries
-          .where((e) => e.value != null)
           .map((e) => {
                 'questionId': e.key,
                 'selectedOptionId': e.value,
@@ -76,6 +75,16 @@ class PuzzleProvider extends ChangeNotifier {
           .toList();
 
       _lastAttempt = await _service.submitAnswers(puzzleId, answers);
+
+      // Fetch full attempt detail so the result screen can show answer review
+      if (_lastAttempt != null && _lastAttempt!.id.isNotEmpty) {
+        try {
+          _lastAttempt = await _service.getAttemptDetail(_lastAttempt!.id);
+        } catch (_) {
+          // If detail fetch fails, still show the basic result
+        }
+      }
+
       _error = null;
     } catch (e) {
       _error = e.toString();
