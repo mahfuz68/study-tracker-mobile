@@ -277,10 +277,6 @@ class McqProvider extends ChangeNotifier {
     _topicsLoading = false;
     notifyListeners();
   }
-      _topicsLoading = false;
-      notifyListeners();
-    }
-  }
 
   void selectSubject(String? subject) {
     _selectedSubject = subject;
