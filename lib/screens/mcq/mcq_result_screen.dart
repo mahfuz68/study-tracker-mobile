@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/mcq_provider.dart';
+import '../../providers/navigation_controller.dart';
 
 class McqResultScreen extends StatelessWidget {
   const McqResultScreen({super.key});
@@ -250,8 +251,13 @@ class McqResultScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                      context, '/mcq', (route) => route.isFirst),
+                  onPressed: () {
+                    // Pop back to MainScaffold, then reset the exam and
+                    // switch to the MCQ tab.
+                    Navigator.popUntil(context, (route) => route.isFirst);
+                    context.read<McqProvider>().resetExam();
+                    context.read<NavigationController>().switchTo(2); // MCQ tab
+                  },
                   child:
                       const Text('New Exam', style: TextStyle(fontSize: 16)),
                 ),

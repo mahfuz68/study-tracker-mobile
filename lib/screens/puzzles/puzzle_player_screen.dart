@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../models/puzzle_question.dart';
 import '../../providers/puzzle_provider.dart';
+import '../../widgets/leave_confirmation_sheet.dart';
 
 class PuzzlePlayerScreen extends StatefulWidget {
   final String puzzleId;
@@ -22,29 +23,13 @@ class _PuzzlePlayerScreenState extends State<PuzzlePlayerScreen> {
   }
 
   Future<bool> _onWillPop() async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Leave Puzzle?'),
-        content: const Text(
-          'Your progress on this puzzle will be lost.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Stay'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.errorRed,
-            ),
-            child: const Text('Leave'),
-          ),
-        ],
-      ),
+    return showLeaveSheet(
+      context,
+      icon: Icons.extension_rounded,
+      title: 'Leave Puzzle?',
+      subtitle: 'Your progress on this puzzle\nwill be lost.',
+      confirmLabel: 'Leave Puzzle',
     );
-    return result ?? false;
   }
 
   @override

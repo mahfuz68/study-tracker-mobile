@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/mcq_provider.dart';
 import '../../providers/navigation_controller.dart';
+import 'mcq_exam_screen.dart';
 
 class McqSetupScreen extends StatefulWidget {
   const McqSetupScreen({super.key});
@@ -111,7 +112,7 @@ class _McqSetupScreenState extends State<McqSetupScreen> {
     if (mcq.error == null && mounted) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const _McqExamScreen()),
+        MaterialPageRoute(builder: (_) => const McqExamScreen()),
       );
     }
   }

@@ -4,15 +4,16 @@
 
 | Action | Command |
 |--------|---------|
-| Get deps | `flutter pub get` |
-| Split APKs | `flutter build apk --release --split-per-abi` |
-| Universal APK | `flutter build apk --release` |
-| Debug APK | `flutter build apk --debug` |
-| Lint | `flutter analyze` |
-| Tests | `flutter test` |
-| Clean | `flutter clean` |
+| Full setup (Java, Flutter, Android SDK) | `make setup` |
+| Get deps | `flutter pub get` or `make install-deps` |
+| Split APKs | `make build-apk-split` |
+| Universal APK | `make build-apk` |
+| Debug APK | `make build-apk-debug` |
+| Lint | `make lint` |
+| Tests | `make test` |
+| Clean | `make clean` |
 
-Build commands need `ANDROID_HOME` set. In low-memory environments, add `GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2g"`.
+In low-memory environments, the `gradle.properties` already sets conservative JVM args (`-Xmx3g`).
 
 ## API base URL
 

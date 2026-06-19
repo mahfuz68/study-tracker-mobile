@@ -87,7 +87,14 @@ class _AppStartupState extends State<AppStartup> {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+      backgroundColor: Color(0xFF0A0A0A),
+      body: Center(
+        child: Image(
+          image: AssetImage('assets/images/logo.png'),
+          width: 160,
+          height: 160,
+        ),
+      ),
     );
   }
 }

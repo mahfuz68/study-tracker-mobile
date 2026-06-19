@@ -1,13 +1,22 @@
-.PHONY: help setup install-deps clean build-apk build-apk-debug build-apk-split build-apk-all build-ios run test lint
+SHELL := /bin/bash
+.ONESHELL:
+
+.PHONY: help setup install-java install-flutter install-android-sdk accept-licenses install-deps clean build-apk build-apk-debug build-apk-split build-apk-all build-ios run test lint generate-icons
 
 # Auto-load .env file (silently skip if missing)
 DART_DEFINE := $(shell [ -f .env ] && echo "--dart-define-from-file=.env" || echo "")
+
+FLUTTER_DIR := $(HOME)/flutter
+ANDROID_SDK_DIR := $(HOME)/android-sdk
 
 help:
 	@echo "Study Progress Tracker - Flutter Build Commands"
 	@echo ""
 	@echo "Setup:"
-	@echo "  make setup          - Install all required tools (Flutter, Java, Android SDK)"
+	@echo "  make setup          - Install all required tools (Java, Flutter, Android SDK)"
+	@echo "  make install-java   - Install Java 17 via SDKman"
+	@echo "  make install-flutter - Install Flutter SDK"
+	@echo "  make install-android-sdk - Install Android SDK + accept licenses"
 	@echo "  make install-deps   - Install Flutter dependencies"
 	@echo ""
 	@echo "Build:"
@@ -22,24 +31,80 @@ help:
 	@echo "  make test           - Run tests"
 	@echo "  make lint           - Run Flutter analyze"
 	@echo "  make clean          - Clean build artifacts"
+	@echo "  make generate-icons - Generate app icons from app_icon.png (1024×1024)"
 
-setup:
-	@echo "Installing required tools..."
-	@chmod +x setup.sh 2>/dev/null || true
-	@if command -v flutter >/dev/null 2>&1; then \
-		echo "Flutter already installed"; \
+setup: install-java install-flutter install-android-sdk accept-licenses install-deps
+	@echo ""
+	@echo "✓ Setup complete!"
+	@echo "  Flutter:  $(FLUTTER_DIR)"
+	@echo "  Android:  $(ANDROID_SDK_DIR)"
+	@echo "  Java:     $$(java -version 2>&1 | head -1)"
+	@echo ""
+	@echo "Run 'source ~/.bashrc' or open a new shell to use Flutter."
+
+install-java:
+	@echo "==> Installing Java 17..."
+	@if java -version 2>&1 | grep -q 'version "1[7-9]'; then \
+		echo "Java 17+ already installed, skipping."; \
+	elif command -v sdk >/dev/null 2>&1 || [ -f "$$SDKMAN_DIR/bin/sdkman-init.sh" ]; then \
+		source "$${SDKMAN_DIR:-$$HOME/.sdkman}/bin/sdkman-init.sh" 2>/dev/null; \
+		sdk install java 17.0.19-amzn || true; \
+		sdk default java 17.0.19-amzn; \
 	else \
-		echo "Please install Flutter from https://flutter.dev"; \
+		echo "Error: SDKman not found. Install it from https://sdkman.io"; \
+		exit 1; \
 	fi
-	@if command -v java >/dev/null 2>&1; then \
-		echo "Java already installed"; \
+
+install-flutter:
+	@echo "==> Installing Flutter SDK..."
+	@if [ -x "$(FLUTTER_DIR)/bin/flutter" ]; then \
+		echo "Flutter already installed at $(FLUTTER_DIR)"; \
+		export PATH="$(FLUTTER_DIR)/bin:$$PATH"; \
+		flutter upgrade 2>/dev/null || true; \
 	else \
-		echo "Please install Java 17+ from https://adoptium.net"; \
+		curl -fsSL https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.44.2-stable.tar.xz \
+			-o /tmp/flutter.tar.xz; \
+		tar xf /tmp/flutter.tar.xz -C "$(HOME)"; \
+		rm -f /tmp/flutter.tar.xz; \
 	fi
-	@echo "Setup complete. Ensure ANDROID_HOME is set for Android builds."
+	@# Add to PATH and set env vars
+	@touch ~/.bashrc
+	@grep -q "flutter/bin" ~/.bashrc 2>/dev/null || echo 'export PATH="$(FLUTTER_DIR)/bin:$$PATH"' >> ~/.bashrc
+	@grep -q "ANDROID_HOME" ~/.bashrc 2>/dev/null || echo 'export ANDROID_HOME="$(ANDROID_SDK_DIR)"' >> ~/.bashrc
+	@grep -q "platform-tools" ~/.bashrc 2>/dev/null || echo 'export PATH="$$ANDROID_HOME/platform-tools:$$PATH"' >> ~/.bashrc
+	@export PATH="$(FLUTTER_DIR)/bin:$$PATH"
+	flutter config --no-analytics 2>/dev/null || true
+
+install-android-sdk:
+	@echo "==> Installing Android SDK..."
+	@if [ -x "$(ANDROID_SDK_DIR)/cmdline-tools/latest/bin/sdkmanager" ]; then \
+		echo "Android SDK already installed at $(ANDROID_SDK_DIR)"; \
+	else \
+		mkdir -p "$(ANDROID_SDK_DIR)"; \
+		curl -fsSL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip \
+			-o /tmp/android-cmd.zip; \
+		unzip -q /tmp/android-cmd.zip -d /tmp/android-cmd-tmp; \
+		mkdir -p "$(ANDROID_SDK_DIR)/cmdline-tools"; \
+		mv /tmp/android-cmd-tmp/cmdline-tools "$(ANDROID_SDK_DIR)/cmdline-tools/latest"; \
+		rm -rf /tmp/android-cmd.zip /tmp/android-cmd-tmp; \
+	fi
+	@export ANDROID_HOME="$(ANDROID_SDK_DIR)"
+	@export PATH="$(ANDROID_SDK_DIR)/cmdline-tools/latest/bin:$$PATH"
+	@yes | sdkmanager --sdk_root="$(ANDROID_SDK_DIR)" \
+		"platform-tools" \
+		"platforms;android-35" \
+		"build-tools;35.0.0" 2>/dev/null || true
+
+accept-licenses:
+	@echo "==> Accepting Android licenses..."
+	@export PATH="$(FLUTTER_DIR)/bin:$(ANDROID_SDK_DIR)/cmdline-tools/latest/bin:$$PATH"
+	@export ANDROID_HOME="$(ANDROID_SDK_DIR)"
+	@yes | flutter doctor --android-licenses 2>/dev/null || true
 
 install-deps:
-	@echo "Installing Flutter dependencies..."
+	@echo "==> Installing Flutter dependencies..."
+	@export PATH="$(FLUTTER_DIR)/bin:$$PATH"
+	@export ANDROID_HOME="$(ANDROID_SDK_DIR)"
 	@flutter pub get
 
 clean:
@@ -66,10 +131,10 @@ build-apk-debug: install-deps
 	@echo "Location: build/app/outputs/flutter-apk/app-debug.apk"
 
 build-apk-split: install-deps
-	@echo "Building split APKs per architecture..."
-	@export PATH="/home/codespace/flutter/bin:$PATH" && export ANDROID_HOME=/home/codespace/android-sdk && export GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2g" && flutter build apk --release --split-per-abi --dart-define-from-file=.env
-# 	GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2g" \
-# 	flutter build apk --release --split-per-abi $(DART_DEFINE)
+	@echo "Building split APKs per architecture (one at a time to avoid OOM)..."
+	@flutter build apk --release --split-per-abi --target-platform android-arm64 --no-tree-shake-icons $(DART_DEFINE)
+	@flutter build apk --release --split-per-abi --target-platform android-arm --no-tree-shake-icons $(DART_DEFINE)
+	@flutter build apk --release --split-per-abi --target-platform android-x64 --no-tree-shake-icons $(DART_DEFINE)
 	@echo ""
 	@echo "✓ Split APKs built successfully!"
 	@echo "Locations:"
@@ -78,9 +143,11 @@ build-apk-split: install-deps
 	@echo "  - x86_64:       build/app/outputs/flutter-apk/app-x86_64-release.apk"
 
 build-apk-all: install-deps
-	@echo "Building all APK variants..."
-	@flutter build apk --release $(DART_DEFINE) && \
-	flutter build apk --release --split-per-abi $(DART_DEFINE)
+	@echo "Building all APK variants (one at a time to avoid OOM)..."
+	@flutter build apk --release --no-tree-shake-icons $(DART_DEFINE)
+	@flutter build apk --release --split-per-abi --target-platform android-arm64 --no-tree-shake-icons $(DART_DEFINE)
+	@flutter build apk --release --split-per-abi --target-platform android-arm --no-tree-shake-icons $(DART_DEFINE)
+	@flutter build apk --release --split-per-abi --target-platform android-x64 --no-tree-shake-icons $(DART_DEFINE)
 	@echo ""
 	@echo "✓ All APKs built successfully!"
 	@echo ""
@@ -105,3 +172,14 @@ run: install-deps
 test:
 	@echo "Running tests..."
 	@flutter test
+
+generate-icons: install-deps
+	@echo "Generating app icons from app_icon.png..."
+	@if [ ! -f app_icon.png ]; then \
+		echo "Error: app_icon.png not found in project root."; \
+		echo "Place a 1024×1024 PNG there and re-run."; \
+		exit 1; \
+	fi
+	@dart run flutter_launcher_icons
+	@echo ""
+	@echo "✓ App icons generated for Android and iOS!"
