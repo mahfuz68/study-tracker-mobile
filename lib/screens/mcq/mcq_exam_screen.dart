@@ -440,9 +440,9 @@ class _McqExamScreenState extends State<McqExamScreen> {
                 setState(() => _selectedOption = optionIndex);
               },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          transform: Matrix4.identity()..scale(isSelected ? 1.01 : 1.0),
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          transform: Matrix4.identity()..scale(isSelected ? 1.02 : 1.0),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: isSelected ? _ExamColors.emeraldDim : _ExamColors.surface,
@@ -512,143 +512,189 @@ class _McqExamScreenState extends State<McqExamScreen> {
     final isLast = mcq.currentIndex == mcq.totalQuestions - 1;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
       decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: _ExamColors.border)),
+        border: Border(top: BorderSide(color: _ExamColors.border, width: 0.5)),
         color: _ExamColors.bg,
       ),
-      child: Row(
-        children: [
-          // Prev chevron
-          _navButton(
-            icon: Icons.chevron_left_rounded,
-            enabled: mcq.currentIndex > 0,
-            onTap: mcq.previousQuestion,
-          ),
-
-          // Flag button
-          GestureDetector(
-            onTap: () => mcq.toggleMarkForReview(mcq.currentIndex),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 44,
-              height: 44,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: isFlagged ? _ExamColors.amber.withOpacity(0.12) : _ExamColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: isFlagged ? _ExamColors.amber.withOpacity(0.5) : _ExamColors.border),
-              ),
-              child: Icon(
-                isFlagged ? Icons.flag : Icons.flag_outlined,
-                color: isFlagged ? _ExamColors.amber : _ExamColors.textMuted,
-                size: 18,
-              ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            // Prev chevron
+            _navChevron(
+              icon: Icons.chevron_left_rounded,
+              enabled: mcq.currentIndex > 0,
+              onTap: mcq.previousQuestion,
             ),
-          ),
 
-          const SizedBox(width: 10),
+            const SizedBox(width: 8),
 
-          // Dynamic center CTA
-          if (_showSavedFeedback)
-            Expanded(
-              child: Container(
-                height: 44,
+            // Flag button
+            GestureDetector(
+              onTap: () => mcq.toggleMarkForReview(mcq.currentIndex),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 40,
+                height: 40,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: _ExamColors.emerald,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  '✓ Saved',
-                  style: TextStyle(color: _ExamColors.bg, fontSize: 15, fontWeight: FontWeight.w700),
-                ),
-              ),
-            )
-          else if (hasSelection)
-            Expanded(
-              child: GestureDetector(
-                onTap: () => _confirmAndNext(mcq),
-                child: Container(
-                  height: 44,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [_ExamColors.emerald, Color(0xFF00A87A)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        isLast ? 'Confirm & Submit' : 'Confirm & Next',
-                        style: const TextStyle(color: _ExamColors.bg, fontSize: 15, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(width: 6),
-                      const Icon(Icons.chevron_right_rounded, color: _ExamColors.bg, size: 20),
-                    ],
+                  color: isFlagged ? _ExamColors.amber.withOpacity(0.12) : _ExamColors.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isFlagged ? _ExamColors.amber.withOpacity(0.5) : _ExamColors.border,
+                    width: isFlagged ? 1.5 : 1.0,
                   ),
                 ),
-              ),
-            )
-          else
-            Expanded(
-              child: GestureDetector(
-                onTap: () => _skipQuestion(mcq),
-                child: Container(
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: _ExamColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _ExamColors.border),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        isLast ? 'Submit' : 'Skip',
-                        style: const TextStyle(color: _ExamColors.textMuted, fontSize: 15, fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(width: 6),
-                      const Icon(Icons.chevron_right_rounded, color: _ExamColors.textMuted, size: 20),
-                    ],
-                  ),
+                child: Icon(
+                  isFlagged ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                  color: isFlagged ? _ExamColors.amber : _ExamColors.textMuted,
+                  size: 18,
                 ),
               ),
             ),
 
-          const SizedBox(width: 10),
+            const SizedBox(width: 8),
 
-          // Next chevron
-          _navButton(
-            icon: Icons.chevron_right_rounded,
-            enabled: mcq.currentIndex < mcq.totalQuestions - 1,
-            onTap: mcq.nextQuestion,
-          ),
-        ],
+            // Dynamic center CTA
+            if (_showSavedFeedback)
+              Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _ExamColors.emerald,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_rounded, color: _ExamColors.bg, size: 18),
+                      SizedBox(width: 6),
+                      Text(
+                        'Saved',
+                        style: TextStyle(
+                          color: _ExamColors.bg,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else if (hasSelection)
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _confirmAndNext(mcq),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00C896), Color(0xFF00A87A)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _ExamColors.emerald.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          isLast ? 'Submit Exam' : 'Confirm & Next',
+                          style: const TextStyle(
+                            color: _ExamColors.bg,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.arrow_forward_rounded, color: _ExamColors.bg, size: 16),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _skipQuestion(mcq),
+                  child: Container(
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _ExamColors.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: _ExamColors.border, width: 1.0),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          isLast ? 'Submit' : 'Skip',
+                          style: const TextStyle(
+                            color: _ExamColors.textMuted,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.arrow_forward_ios_rounded, color: _ExamColors.textDim, size: 12),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+            const SizedBox(width: 8),
+
+            // Next chevron
+            _navChevron(
+              icon: Icons.chevron_right_rounded,
+              enabled: mcq.currentIndex < mcq.totalQuestions - 1,
+              onTap: mcq.nextQuestion,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _navButton({
+  Widget _navChevron({
     required IconData icon,
     required bool enabled,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: enabled ? onTap : null,
-      child: Container(
-        width: 44,
-        height: 44,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        width: 40,
+        height: 40,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: _ExamColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _ExamColors.border),
+          color: enabled ? _ExamColors.surface : _ExamColors.surface.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: enabled ? _ExamColors.border : _ExamColors.border.withOpacity(0.4),
+          ),
         ),
-        child: Icon(icon, size: 20, color: enabled ? _ExamColors.textMuted : _ExamColors.textDim),
+        child: Icon(
+          icon,
+          size: 20,
+          color: enabled ? _ExamColors.textMuted : _ExamColors.textDim.withOpacity(0.5),
+        ),
       ),
     );
   }
