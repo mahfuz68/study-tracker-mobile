@@ -20,6 +20,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
   final ProgressService _service = ProgressService();
   String? _shareToken;
   bool _sharing = false;
+  bool _showAllExamResults = false;
+  bool _showAllDays = false;
 
   @override
   void initState() {
@@ -194,7 +196,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         icon: Icons.calendar_today_rounded,
       ),
       _StatCardData(
-        label: 'Total Topics',
+        label: 'Topics',
         value: '$totalTopics',
         color: AppTheme.accentGold,
         icon: Icons.menu_book_rounded,
@@ -353,7 +355,24 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 Text('No exams taken yet.',
                     style: AppTheme.body(13, color: AppTheme.textTertiary))
               else
-                ...attempts.map(_buildAttemptTile),
+                ...() {
+                  final displayed = _showAllExamResults
+                      ? attempts
+                      : attempts.take(5).toList();
+                  return displayed.map(_buildAttemptTile);
+                }(),
+              if (attempts.length > 5)
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  alignment: Alignment.topCenter,
+                  child: _buildToggleButton(
+                    isExpanded: _showAllExamResults,
+                    onTap: () => setState(
+                        () => _showAllExamResults = !_showAllExamResults),
+                    remainingCount: (attempts.length - 5).clamp(0, attempts.length),
+                  ),
+                ),
             ],
           ),
         );
@@ -435,15 +454,62 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
+  /// Shared show-more / show-less toggle button for collapsible sections.
+  Widget _buildToggleButton({
+    required bool isExpanded,
+    required VoidCallback onTap,
+    required int remainingCount,
+    String expandedLabel = 'Show Less',
+    String collapsedLabel = 'Show More',
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: SizedBox(
+        width: double.infinity,
+        child: TextButton(
+          onPressed: onTap,
+          style: TextButton.styleFrom(
+            foregroundColor: AppTheme.primaryGreen,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isExpanded
+                    ? Icons.expand_less_rounded
+                    : Icons.expand_more_rounded,
+                size: 18,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                isExpanded
+                    ? expandedLabel
+                    : '$collapsedLabel ($remainingCount remaining)',
+                style: AppTheme.body(13,
+                    weight: FontWeight.w600, color: AppTheme.primaryGreen),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDayProgressTable(ProgressProvider provider) {
     if (provider.studyPlan.isEmpty) return const SizedBox.shrink();
+    final days = provider.studyPlan;
+    final displayedDays = _showAllDays ? days : days.take(3).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Day-by-Day Progress',
             style: AppTheme.display(16, weight: FontWeight.w700)),
         const SizedBox(height: 12),
-        ...provider.studyPlan.map((day) {
+        ...displayedDays.map((day) {
           return Container(
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(14),
@@ -510,6 +576,17 @@ class _ProgressScreenState extends State<ProgressScreen> {
             ),
           );
         }),
+        if (days.length > 3)
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: _buildToggleButton(
+              isExpanded: _showAllDays,
+              onTap: () => setState(() => _showAllDays = !_showAllDays),
+              remainingCount: (days.length - 3).clamp(0, days.length),
+            ),
+          ),
       ],
     );
   }
@@ -570,29 +647,40 @@ class _StatCard extends StatelessWidget {
           border: Border.all(color: AppTheme.border, width: 0.5),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Icon(data.icon, color: data.color, size: 20),
-            const SizedBox(height: 10),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                data.value,
-                style: TextStyle(
-                  color: data.color,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  height: 1,
-                  fontFamily: 'JetBrains Mono',
+            const Spacer(),
+            // Fixed-height container for the number
+            SizedBox(
+              height: 28,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  data.value,
+                  style: TextStyle(
+                    color: data.color,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    height: 1,
+                    fontFamily: 'JetBrains Mono',
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 6),
-            Text(data.label,
+            // Fixed-height container for the label (2 lines)
+            SizedBox(
+              height: 34,
+              child: Text(
+                data.label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: AppTheme.body(12,
-                    weight: FontWeight.w500, color: AppTheme.textSecondary)),
+                    weight: FontWeight.w500, color: AppTheme.textSecondary),
+              ),
+            ),
           ],
         ),
       ),
