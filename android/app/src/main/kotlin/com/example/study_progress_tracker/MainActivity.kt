@@ -1,4 +1,4 @@
-package com.example.study_progress_tracker
+package com.mahfuz.studytracker
 
 import io.flutter.embedding.android.FlutterActivity
 

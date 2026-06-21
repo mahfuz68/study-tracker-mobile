@@ -134,7 +134,6 @@ build-apk-split: install-deps
 	@echo "Building split APKs per architecture (one at a time to avoid OOM)..."
 	@flutter build apk --release --split-per-abi --target-platform android-arm64 --no-tree-shake-icons $(DART_DEFINE)
 	@flutter build apk --release --split-per-abi --target-platform android-arm --no-tree-shake-icons $(DART_DEFINE)
-	@flutter build apk --release --split-per-abi --target-platform android-x64 --no-tree-shake-icons $(DART_DEFINE)
 	@echo ""
 	@echo "✓ Split APKs built successfully!"
 	@echo "Locations:"
@@ -174,12 +173,12 @@ test:
 	@flutter test
 
 generate-icons: install-deps
-	@echo "Generating app icons from app_icon.png..."
-	@if [ ! -f app_icon.png ]; then \
-		echo "Error: app_icon.png not found in project root."; \
-		echo "Place a 1024×1024 PNG there and re-run."; \
+	@echo "Generating app icons from logo.png..."
+	@if [ ! -f logo.png ]; then \
+		echo "Error: logo.png not found in project root."; \
+		echo "Place a PNG there and re-run."; \
 		exit 1; \
 	fi
 	@dart run flutter_launcher_icons
 	@echo ""
-	@echo "✓ App icons generated for Android and iOS!"
+	@echo "✓ App icons generated for Android!"

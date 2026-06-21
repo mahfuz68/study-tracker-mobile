@@ -7,7 +7,7 @@ flutter_launcher_icons:
   # ── Android ──────────────────────────────────────────────
   android: true
   adaptive_icon_foreground: "logo.png"
-  adaptive_icon_background: "#4A8FD4"
+  adaptive_icon_background: "#079F70"
 
   # ── iOS (disabled — iOS project not set up) ──────────────
   ios: false

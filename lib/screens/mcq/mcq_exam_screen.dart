@@ -65,8 +65,11 @@ class _McqExamScreenState extends State<McqExamScreen> {
   }
 
   void _skipQuestion(McqProvider mcq) {
-    // Clear any tentative selection for this question before moving on
-    setState(() => _selections[mcq.currentIndex] = null);
+    // If user selected an option, save it to the provider before moving on
+    final selection = _selections[mcq.currentIndex];
+    if (selection != null && !mcq.locked[mcq.currentIndex]) {
+      mcq.selectAnswer(mcq.currentIndex, selection);
+    }
 
     if (mcq.currentIndex == mcq.totalQuestions - 1) {
       _submitExam(mcq);
@@ -85,6 +88,14 @@ class _McqExamScreenState extends State<McqExamScreen> {
   void _submitExam(McqProvider mcq) async {
     _globalTimer?.cancel();
     if (!mounted) return;
+
+    // Sync all local selections to the provider before submitting
+    for (final entry in _selections.entries) {
+      if (entry.value != null) {
+        mcq.selectAnswer(entry.key, entry.value!);
+      }
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -399,25 +410,25 @@ class _McqExamScreenState extends State<McqExamScreen> {
               height: 1.7,
             ),
           ),
-          if (q.explanation != null) ...[
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _ExamColors.bg,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: _ExamColors.border),
-              ),
-              child: Text(
-                q.explanation!,
-                style: const TextStyle(
-                  color: _ExamColors.textMuted,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-          ],
+          // if (q.explanation != null) ...[
+          //   const SizedBox(height: 10),
+          //   Container(
+          //     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          //     decoration: BoxDecoration(
+          //       color: _ExamColors.bg,
+          //       borderRadius: BorderRadius.circular(6),
+          //       border: Border.all(color: _ExamColors.border),
+          //     ),
+          //     child: Text(
+          //       q.explanation!,
+          //       style: const TextStyle(
+          //         color: _ExamColors.textMuted,
+          //         fontSize: 11,
+          //         fontWeight: FontWeight.w400,
+          //       ),
+          //     ),
+          //   ),
+          // ],
         ],
       ),
     );
@@ -527,11 +538,17 @@ class _McqExamScreenState extends State<McqExamScreen> {
             top: false,
             child: Row(
               children: [
-                // Prev chevron
+                // Prev chevron — saves selection before navigating back
                 _navChevron(
                   icon: Icons.chevron_left_rounded,
                   enabled: mcq.currentIndex > 0,
-                  onTap: mcq.previousQuestion,
+                  onTap: () {
+                    final selection = _selections[mcq.currentIndex];
+                    if (selection != null && !mcq.locked[mcq.currentIndex]) {
+                      mcq.selectAnswer(mcq.currentIndex, selection);
+                    }
+                    mcq.previousQuestion();
+                  },
                 ),
 
                 const SizedBox(width: 8),
@@ -603,11 +620,17 @@ class _McqExamScreenState extends State<McqExamScreen> {
 
                 const SizedBox(width: 8),
 
-                // Next chevron
+                // Next chevron — also saves any selection before advancing
                 _navChevron(
                   icon: Icons.chevron_right_rounded,
                   enabled: mcq.currentIndex < mcq.totalQuestions - 1,
-                  onTap: mcq.nextQuestion,
+                  onTap: () {
+                    final selection = _selections[mcq.currentIndex];
+                    if (selection != null && !mcq.locked[mcq.currentIndex]) {
+                      mcq.selectAnswer(mcq.currentIndex, selection);
+                    }
+                    mcq.nextQuestion();
+                  },
                 ),
               ],
             ),
@@ -742,6 +765,11 @@ class _McqExamScreenState extends State<McqExamScreen> {
 
                         return GestureDetector(
                           onTap: () {
+                            // Save current selection before jumping
+                            final selection = _selections[mcq.currentIndex];
+                            if (selection != null && !mcq.locked[mcq.currentIndex]) {
+                              mcq.selectAnswer(mcq.currentIndex, selection);
+                            }
                             mcq.goToQuestion(i);
                             Navigator.pop(sheetCtx);
                           },
