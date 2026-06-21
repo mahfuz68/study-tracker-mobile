@@ -53,10 +53,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           icon: Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceElevated.withOpacity(0.7),
+              color: AppTheme.card.withOpacity(0.7),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                  color: AppTheme.borderColor.withOpacity(0.5), width: 0.5),
+                  color: AppTheme.border.withOpacity(0.5), width: 0.5),
             ),
             child: const Icon(Icons.arrow_back_rounded, size: 18),
           ),
@@ -70,7 +70,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             radius: 1.5,
             colors: [
               Color(0xFF1A2B23),
-              AppTheme.surfaceDark,
+              AppTheme.bg,
             ],
             stops: [0.0, 0.6],
           ),
@@ -85,25 +85,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'Create account',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.5,
-                      ),
+                      style: AppTheme.display(28, weight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Start tracking your study progress today',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 15,
-                        height: 1.4,
-                      ),
+                      style: AppTheme.body(15, color: AppTheme.textSecondary),
                     ),
                     const SizedBox(height: 32),
                     TextFormField(
@@ -118,6 +109,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         prefixIconConstraints:
                             BoxConstraints(minWidth: 0, minHeight: 0),
                       ),
+                      style: AppTheme.body(15),
                       textInputAction: TextInputAction.next,
                       validator: (v) =>
                           v?.isEmpty ?? true ? 'Name is required' : null,
@@ -135,6 +127,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         prefixIconConstraints:
                             BoxConstraints(minWidth: 0, minHeight: 0),
                       ),
+                      style: AppTheme.body(15),
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       validator: (v) {
@@ -171,6 +164,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         suffixIconConstraints:
                             const BoxConstraints(minWidth: 0, minHeight: 0),
                       ),
+                      style: AppTheme.body(15),
                       obscureText: _obscurePassword,
                       textInputAction: TextInputAction.next,
                       validator: (v) {
@@ -207,6 +201,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         suffixIconConstraints:
                             const BoxConstraints(minWidth: 0, minHeight: 0),
                       ),
+                      style: AppTheme.body(15),
                       obscureText: _obscureConfirm,
                       textInputAction: TextInputAction.done,
                       onFieldSubmitted: (_) => _register(),
@@ -244,10 +239,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 Expanded(
                                   child: Text(
                                     auth.error!,
-                                    style: const TextStyle(
-                                      color: AppTheme.errorRed,
-                                      fontSize: 13,
-                                    ),
+                                    style: AppTheme.body(13, color: AppTheme.errorRed),
                                   ),
                                 ),
                               ],
@@ -292,13 +284,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       color: Colors.white,
                                     ),
                                   )
-                                : const Text(
+                                : Text(
                                     'Create Account',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: -0.2,
-                                    ),
+                                    style: AppTheme.body(16,
+                                        weight: FontWeight.w700,
+                                        color: Colors.white),
                                   ),
                           ),
                         );
@@ -308,12 +298,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
+                        Text(
                           'Already have an account? ',
-                          style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 14,
-                          ),
+                          style: AppTheme.body(14, color: AppTheme.textSecondary),
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(context),
@@ -322,12 +309,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             minimumSize: const Size(0, 0),
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                          child: const Text(
+                          child: Text(
                             'Sign in',
-                            style: TextStyle(
-                              color: AppTheme.primaryGreen,
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: AppTheme.body(14,
+                                weight: FontWeight.w700,
+                                color: AppTheme.primaryGreen),
                           ),
                         ),
                       ],

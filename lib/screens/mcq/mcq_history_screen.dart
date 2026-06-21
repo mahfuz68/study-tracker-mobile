@@ -23,11 +23,15 @@ class _McqHistoryScreenState extends State<McqHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Exam History')),
+      backgroundColor: AppTheme.bg,
+      appBar: AppBar(
+        title: Text('Exam History', style: AppTheme.display(26, weight: FontWeight.w800)),
+      ),
       body: Consumer<McqProvider>(
         builder: (context, mcq, _) {
           if (mcq.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+                child: CircularProgressIndicator(color: AppTheme.primaryGreen));
           }
 
           final attempts = mcq.attempts;
@@ -36,7 +40,7 @@ class _McqHistoryScreenState extends State<McqHistoryScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.history, size: 64, color: AppTheme.borderColor),
+                  Icon(Icons.history, size: 64, color: AppTheme.border),
                   SizedBox(height: 16),
                   Text('No exam history yet',
                       style: TextStyle(color: AppTheme.textSecondary)),
@@ -55,9 +59,9 @@ class _McqHistoryScreenState extends State<McqHistoryScreen> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceElevated,
+                    color: AppTheme.card,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.borderColor),
+                    border: Border.all(color: AppTheme.border, width: 0.5),
                   ),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
@@ -89,6 +93,7 @@ class _McqHistoryScreenState extends State<McqHistoryScreen> {
                                     : AppTheme.errorRed,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 14,
+                                fontFamily: 'JetBrains Mono',
                               ),
                             ),
                           ),
@@ -119,27 +124,22 @@ class _McqHistoryScreenState extends State<McqHistoryScreen> {
                                               : AppTheme.errorRed,
                                           fontSize: 10,
                                           fontWeight: FontWeight.w700,
+                                          fontFamily: 'JetBrains Mono',
+                                          letterSpacing: 0.6,
                                         ),
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    Text(
-                                      '${a.correct}/${a.total} correct',
-                                      style: const TextStyle(
-                                        color: AppTheme.textPrimary,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
+                                    Text('${a.correct}/${a.total} correct',
+                                        style: AppTheme.body(14,
+                                            weight: FontWeight.w500)),
                                   ],
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   _formatDate(a.createdAt),
-                                  style: const TextStyle(
-                                    color: AppTheme.textSecondary,
-                                    fontSize: 11,
-                                  ),
+                                  style: AppTheme.body(11,
+                                      color: AppTheme.textSecondary),
                                 ),
                               ],
                             ),
@@ -168,4 +168,3 @@ class _McqHistoryScreenState extends State<McqHistoryScreen> {
     }
   }
 }
-

@@ -27,8 +27,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final p = context.read<ProgressProvider>();
       p.loadStudyPlan();
-      // Also fetch this user's MCQ attempt history so the "Recent MCQ
-      // results" section is populated on first render.
       context.read<McqProvider>().loadAttempts(limit: 20);
     });
   }
@@ -76,15 +74,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Progress',
-                      style: TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
+                    Text('Progress',
+                        style: AppTheme.display(26, weight: FontWeight.w800)),
                     const SizedBox(height: 20),
                     _buildShareCard(),
                     const SizedBox(height: 24),
@@ -120,14 +111,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
             children: const [
               Icon(Icons.share_rounded, color: Color(0xFF34D399), size: 18),
               SizedBox(width: 10),
-              Text(
-                'Share Progress',
-                style: TextStyle(
-                  color: Color(0xFFF0FDF4),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              Text('Share Progress',
+                  style: TextStyle(
+                      color: Color(0xFFF0FDF4),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700)),
             ],
           ),
           const SizedBox(height: 8),
@@ -175,14 +163,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         children: [
                           Icon(Icons.link_rounded, size: 16),
                           SizedBox(width: 8),
-                          Text(
-                            'Generate Share Link',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
+                          Text('Generate Share Link',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.3)),
                         ],
                       ),
               ),
@@ -193,9 +178,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 
   Widget _buildStatsCards(ProgressProvider provider) {
-    // Cross-day aggregates — these now reflect the FULL plan, not just
-    // the currently-loaded day, so the numbers stay consistent with the
-    // bar chart and day-by-day table.
     final totalTopics = provider.totalTopics;
     final completionPct = (provider.completionRate * 100).round();
     final cards = [
@@ -248,14 +230,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Completion per Day',
-            style: TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          Text('Completion per Day',
+              style: AppTheme.display(15, weight: FontWeight.w700)),
           const SizedBox(height: 16),
           if (days.isEmpty)
             const Padding(
@@ -292,12 +268,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           if (idx >= 0 && idx < days.length) {
                             return Padding(
                               padding: const EdgeInsets.only(top: 6),
-                              child: Text(
-                                'D${days[idx].dayNumber}',
-                                style: const TextStyle(
-                                    color: AppTheme.textTertiary,
-                                    fontSize: 11),
-                              ),
+                              child: Text('D${days[idx].dayNumber}',
+                                  style: const TextStyle(
+                                      color: AppTheme.textTertiary,
+                                      fontSize: 11)),
                             );
                           }
                           return const Text('');
@@ -319,10 +293,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     ),
                   ),
                   borderData: FlBorderData(show: false),
-                  // Per-day completion is now computed from the all-days
-                  // progress collection (not just the loaded day), so
-                  // every bar in the chart reflects what's actually in
-                  // the database for this user.
                   barGroups: List.generate(days.length, (i) {
                     final day = days[i];
                     final rate = provider.completionRateForDay(day.dayNumber);
@@ -349,9 +319,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
-  /// Recent MCQ exam results — pulls from [McqProvider.attempts] which
-  /// is populated by `GET /api/mcq/attempts`. Shows score, total, pass /
-  /// fail, subject, topic, and the date.
   Widget _buildMcqHistory() {
     return Consumer<McqProvider>(
       builder: (context, mcq, _) {
@@ -368,15 +335,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
             children: [
               Row(
                 children: [
-                  const Expanded(
-                    child: Text(
-                      'MCQ Exam Results',
-                      style: TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                  Expanded(
+                    child: Text('MCQ Exam Results',
+                        style: AppTheme.display(15, weight: FontWeight.w700)),
                   ),
                   if (mcq.isLoading)
                     const SizedBox(
@@ -389,11 +350,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
               ),
               const SizedBox(height: 12),
               if (attempts.isEmpty)
-                const Text(
-                  'No exams taken yet.',
-                  style: TextStyle(
-                      color: AppTheme.textTertiary, fontSize: 13),
-                )
+                Text('No exams taken yet.',
+                    style: AppTheme.body(13, color: AppTheme.textTertiary))
               else
                 ...attempts.map(_buildAttemptTile),
             ],
@@ -428,6 +386,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     : AppTheme.errorRed,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
+                fontFamily: 'JetBrains Mono',
               ),
             ),
           ),
@@ -439,23 +398,14 @@ class _ProgressScreenState extends State<ProgressScreen> {
               children: [
                 Text(
                   '${a.subject ?? 'General'}${a.topic != null && a.topic!.isNotEmpty ? ' — ${a.topic}' : ''}',
-                  style: const TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppTheme.body(13, weight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  '${a.correct}/${a.total} correct · $dt',
-                  style: const TextStyle(
-                    color: AppTheme.textTertiary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Text('${a.correct}/${a.total} correct · $dt',
+                    style: AppTheme.body(12,
+                        weight: FontWeight.w500, color: AppTheme.textTertiary)),
               ],
             ),
           ),
@@ -476,6 +426,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.6,
+                fontFamily: 'JetBrains Mono',
               ),
             ),
           ),
@@ -489,14 +440,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Day-by-Day Progress',
-          style: TextStyle(
-            color: AppTheme.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        Text('Day-by-Day Progress',
+            style: AppTheme.display(16, weight: FontWeight.w700)),
         const SizedBox(height: 12),
         ...provider.studyPlan.map((day) {
           return Container(
@@ -513,28 +458,17 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Day ${day.dayNumber}',
-                      style: const TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700),
-                    ),
+                    Text('Day ${day.dayNumber}',
+                        style: AppTheme.body(14, weight: FontWeight.w700)),
                     if (day.label != null)
-                      Text(
-                        day.label!,
-                        style: const TextStyle(
-                            color: AppTheme.textSecondary, fontSize: 12),
-                      ),
+                      Text(day.label!,
+                          style: AppTheme.body(12,
+                              color: AppTheme.textSecondary)),
                   ],
                 ),
                 if (day.topics.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   ...day.topics.map((t) {
-                    // Check the all-days collection, not just the
-                    // currently-loaded day's progress, so completed
-                    // topics show correctly even if their day isn't
-                    // currently loaded.
                     final done = provider.allProgress.any(
                       (p) => p.topicId == t.id && p.isComplete,
                     );
@@ -563,6 +497,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                 fontWeight: done
                                     ? FontWeight.w600
                                     : FontWeight.w500,
+                                fontFamily: 'Inter',
                               ),
                             ),
                           ),
@@ -650,20 +585,14 @@ class _StatCard extends StatelessWidget {
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                   height: 1,
+                  fontFamily: 'JetBrains Mono',
                 ),
               ),
             ),
             const SizedBox(height: 6),
-            Text(
-              data.label,
-              style: const TextStyle(
-                color: AppTheme.textSecondary,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            Text(data.label,
+                style: AppTheme.body(12,
+                    weight: FontWeight.w500, color: AppTheme.textSecondary)),
           ],
         ),
       ),
@@ -689,8 +618,7 @@ class _ShareTokenBox extends StatelessWidget {
           Expanded(
             child: Text(
               'Token: $token',
-              style: const TextStyle(
-                  color: AppTheme.textPrimary, fontSize: 12),
+              style: AppTheme.body(12),
               overflow: TextOverflow.ellipsis,
             ),
           ),

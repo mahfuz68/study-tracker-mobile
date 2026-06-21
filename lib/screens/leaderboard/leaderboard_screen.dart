@@ -32,7 +32,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
     final cache = context.read<CacheService>();
 
-    // 1. Show cached data instantly
     final cached = await cache.get('leaderboard', ttl: const Duration(hours: 6));
     if (cached != null) {
       final totalTopics = cached['totalTopics'] as int? ?? 0;
@@ -51,7 +50,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       if (mounted) setState(() => _loading = false);
     }
 
-    // 2. Fetch fresh data in background
     try {
       _entries = await _service.getLeaderboard();
       await cache.set('leaderboard', {
@@ -71,14 +69,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Leaderboard')),
+      backgroundColor: AppTheme.bg,
+      appBar: AppBar(
+        title: Text('Leaderboard', style: AppTheme.display(26, weight: FontWeight.w800)),
+      ),
       body: _buildBody(),
     );
   }
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+          child: CircularProgressIndicator(color: AppTheme.primaryGreen));
     }
     if (_error != null) {
       return Center(
@@ -87,7 +89,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           children: [
             const Icon(Icons.cloud_off, size: 48, color: AppTheme.textSecondary),
             const SizedBox(height: 12),
-            Text('Failed to load', style: TextStyle(color: AppTheme.textSecondary)),
+            Text('Failed to load',
+                style: AppTheme.body(14, color: AppTheme.textSecondary)),
             const SizedBox(height: 12),
             ElevatedButton(onPressed: _load, child: const Text('Retry')),
           ],
@@ -97,8 +100,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
     final entries = _entries ?? [];
     if (entries.isEmpty) {
-      return const Center(
-        child: Text('No entries yet', style: TextStyle(color: AppTheme.textSecondary)),
+      return Center(
+        child: Text('No entries yet',
+            style: AppTheme.body(15, color: AppTheme.textSecondary)),
       );
     }
 
@@ -149,11 +153,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 Text(
                   e.name,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
+                  style: AppTheme.body(13, weight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -162,11 +162,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     color: colors[i],
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
+                    fontFamily: 'JetBrains Mono',
                   ),
                 ),
                 Text('topics',
-                    style: const TextStyle(
-                        color: AppTheme.textSecondary, fontSize: 10)),
+                    style: AppTheme.body(10, color: AppTheme.textSecondary)),
               ],
             ),
           ),
@@ -180,39 +180,31 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceElevated,
+        color: AppTheme.card,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.border, width: 0.5),
       ),
       child: Row(
         children: [
           SizedBox(
             width: 32,
-            child: Text(
-              '#$rank',
-              style: const TextStyle(
-                color: AppTheme.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child: Text('#$rank',
+                style: AppTheme.body(14,
+                    weight: FontWeight.w600, color: AppTheme.textSecondary)),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  entry.name,
-                  style: const TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Text(entry.name,
+                    style: AppTheme.body(14, weight: FontWeight.w500)),
                 const SizedBox(height: 4),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: entry.completionRate,
-                    backgroundColor: AppTheme.borderColor,
+                    backgroundColor: AppTheme.border,
                     valueColor: const AlwaysStoppedAnimation(
                         AppTheme.primaryGreen),
                     minHeight: 6,
@@ -224,10 +216,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           const SizedBox(width: 12),
           Text(
             '${(entry.completionRate * 100).round()}%',
-            style: const TextStyle(
-              color: AppTheme.primaryGreen,
-              fontWeight: FontWeight.w700,
-            ),
+            style: AppTheme.body(14,
+                weight: FontWeight.w700, color: AppTheme.primaryGreen),
           ),
         ],
       ),

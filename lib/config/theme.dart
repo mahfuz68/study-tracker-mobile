@@ -1,24 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Design system for the Study Tracker mobile app.
 ///
-/// Visual spec (matches `r2_uploader/new-design.jpg`):
-/// - Background: #0D0D0D
-/// - Card surface: #1A1A1A
-/// - Border: #2A2A2A
-/// - Primary accent: #10B981 (emerald)
-/// - Text primary: #F9FAFB
-/// - Text secondary: #6B7280
-/// - Radii: 16 cards, 12 buttons, 14 inputs
+/// Palette:  dark warm (#0D0D0D bg, #111716 surface), emerald accent.
+/// Typography:  Space Grotesk (display) · Inter (body) · JetBrains Mono (data).
+/// Radii:  16 cards, 12 buttons, 14 inputs, 8 chips.
 class AppTheme {
   // ── Surfaces ───────────────────────────────────────────────
   static const Color bg = Color(0xFF0D0D0D);
   static const Color card = Color(0xFF1A1A1A);
   static const Color cardHigher = Color(0xFF252525);
 
+  // Warmer variant used by the profile screen
+  static const Color bgWarm = Color(0xFF090D0C);
+  static const Color surfaceWarm = Color(0xFF111716);
+  static const Color surfaceWarm2 = Color(0xFF161E1C);
+
   // ── Borders ────────────────────────────────────────────────
   static const Color border = Color(0xFF2A2A2A);
   static const Color navBarBorder = Color(0xFF1F1F1F);
+
+  // Profile-style border (slightly deeper green-black)
+  static const Color borderWarm = Color(0xFF222B28);
 
   // ── Bottom nav ─────────────────────────────────────────────
   static const Color navBarBg = Color(0xF2121212); // rgba(18,18,18,0.95)
@@ -28,20 +32,30 @@ class AppTheme {
   static const Color textSecondary = Color(0xFF6B7280);
   static const Color textTertiary = Color(0xFF9CA3AF);
 
+  // Profile-style warmer text
+  static const Color textPrimaryWarm = Color(0xFFF2F7F5);
+  static const Color textSecondaryWarm = Color(0xFF86A09A);
+  static const Color textTertiaryWarm = Color(0xFF4D5B57);
+
   // ── Accent (emerald) ───────────────────────────────────────
   static const Color primaryGreen = Color(0xFF10B981);
   static const Color primaryGreenDark = Color(0xFF059669);
   static const Color primaryGreenLight = Color(0xFF34D399);
   static const Color primaryGreenLighter = Color(0xFF6EE7B7);
 
+  // Warmer / brighter emerald for hero accents (profile screen)
+  static const Color emeraldBright = Color(0xFF00C896);
+  static const Color emeraldBright2 = Color(0xFF2ECC71);
+
   // ── Functional ─────────────────────────────────────────────
   static const Color errorRed = Color(0xFFEF4444);
+  static const Color errorRedWarm = Color(0xFFFF4757);
   static const Color successGreen = Color(0xFF22C55E);
   static const Color warningAmber = Color(0xFFF59E0B);
   static const Color infoBlue = Color(0xFF3B82F6);
   static const Color accentGold = Color(0xFFF59E0B);
 
-  // ── Compat aliases (used by other widgets still in the app) ─
+  // ── Compat aliases ─────────────────────────────────────────
   static const Color surfaceDark = bg;
   static const Color surfaceElevated = card;
   static const Color surfaceHigher = cardHigher;
@@ -57,6 +71,12 @@ class AppTheme {
   // ── Gradients ──────────────────────────────────────────────
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [Color(0xFF10B981), Color(0xFF059669)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient emeraldBrightGradient = LinearGradient(
+    colors: [Color(0xFF00C896), Color(0xFF059669)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -113,6 +133,106 @@ class AppTheme {
     end: Alignment.bottomRight,
   );
 
+  // ── Typography helpers ─────────────────────────────────────
+  /// Display / heading face — Space Grotesk.
+  static TextStyle display(double size,
+          {FontWeight weight = FontWeight.w700, Color? color}) =>
+      GoogleFonts.spaceGrotesk(
+          fontSize: size, fontWeight: weight, color: color ?? textPrimary);
+
+  /// Body face — Inter.
+  static TextStyle body(double size,
+          {FontWeight weight = FontWeight.w400, Color? color}) =>
+      GoogleFonts.inter(
+          fontSize: size, fontWeight: weight, color: color ?? textPrimary);
+
+  /// Mono / data face — JetBrains Mono.
+  static TextStyle mono(double size,
+          {FontWeight weight = FontWeight.w500, Color? color}) =>
+      GoogleFonts.jetBrainsMono(
+          fontSize: size, fontWeight: weight, color: color ?? textPrimary);
+
+  /// Build the full text theme using the three-typeface system.
+  static TextTheme get _textTheme {
+    return TextTheme(
+      displayLarge: GoogleFonts.spaceGrotesk(
+        fontSize: 32,
+        fontWeight: FontWeight.w800,
+        color: textPrimary,
+        letterSpacing: -0.8,
+      ),
+      headlineLarge: GoogleFonts.spaceGrotesk(
+        fontSize: 28,
+        fontWeight: FontWeight.w800,
+        color: textPrimary,
+        letterSpacing: -0.5,
+      ),
+      headlineMedium: GoogleFonts.spaceGrotesk(
+        fontSize: 22,
+        fontWeight: FontWeight.w800,
+        color: textPrimary,
+        letterSpacing: -0.3,
+      ),
+      headlineSmall: GoogleFonts.spaceGrotesk(
+        fontSize: 19,
+        fontWeight: FontWeight.w700,
+        color: textPrimary,
+      ),
+      titleLarge: GoogleFonts.spaceGrotesk(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        color: textPrimary,
+      ),
+      titleMedium: GoogleFonts.spaceGrotesk(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: textPrimary,
+      ),
+      titleSmall: GoogleFonts.inter(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      bodyLarge: GoogleFonts.inter(
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        color: textPrimary,
+        height: 1.4,
+      ),
+      bodyMedium: GoogleFonts.inter(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: textSecondary,
+        height: 1.4,
+      ),
+      bodySmall: GoogleFonts.inter(
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+        color: textSecondary,
+      ),
+      labelLarge: GoogleFonts.inter(
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+        color: textPrimary,
+        letterSpacing: 0.1,
+      ),
+      labelMedium: GoogleFonts.jetBrainsMono(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: textSecondary,
+        letterSpacing: 0.2,
+      ),
+      labelSmall: GoogleFonts.jetBrainsMono(
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        color: textTertiary,
+        letterSpacing: 0.3,
+      ),
+    );
+  }
+
+  /// The app's dark theme — every screen inherits the typed text scale,
+  /// consistent radii, and dark emerald palette.
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
@@ -131,19 +251,19 @@ class AppTheme {
         error: errorRed,
         onError: Colors.white,
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         foregroundColor: textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: TextStyle(
+        titleTextStyle: GoogleFonts.spaceGrotesk(
           color: textPrimary,
           fontSize: 26,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.4,
         ),
-        iconTheme: IconThemeData(color: textPrimary, size: 22),
+        iconTheme: const IconThemeData(color: textPrimary, size: 22),
       ),
       cardTheme: CardThemeData(
         color: card,
@@ -179,8 +299,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(radiusInput),
           borderSide: const BorderSide(color: errorRed, width: 1.5),
         ),
-        labelStyle: const TextStyle(color: textSecondary, fontSize: 14),
-        hintStyle: const TextStyle(color: textSecondary, fontSize: 14),
+        labelStyle: GoogleFonts.inter(color: textSecondary, fontSize: 14),
+        hintStyle: GoogleFonts.inter(color: textSecondary, fontSize: 14),
         prefixIconColor: textSecondary,
         suffixIconColor: textSecondary,
       ),
@@ -188,7 +308,7 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryGreen,
           foregroundColor: Colors.white,
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.inter(
             fontSize: 15,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.1,
@@ -203,7 +323,7 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: textPrimary,
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.inter(
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -217,7 +337,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primaryGreen,
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -234,19 +354,20 @@ class AppTheme {
           borderRadius: BorderRadius.circular(20),
         ),
         elevation: 0,
-        titleTextStyle: const TextStyle(
+        titleTextStyle: GoogleFonts.spaceGrotesk(
           color: textPrimary,
           fontSize: 18,
           fontWeight: FontWeight.w700,
         ),
-        contentTextStyle: const TextStyle(
+        contentTextStyle: GoogleFonts.inter(
           color: textSecondary,
           fontSize: 14,
         ),
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: cardHigher,
-        contentTextStyle: const TextStyle(color: textPrimary, fontSize: 14),
+        contentTextStyle:
+            GoogleFonts.inter(color: textPrimary, fontSize: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusButton),
         ),
@@ -259,78 +380,7 @@ class AppTheme {
         linearTrackColor: border,
         circularTrackColor: border,
       ),
-      textTheme: const TextTheme(
-        displayLarge: TextStyle(
-          color: textPrimary,
-          fontSize: 32,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.8,
-        ),
-        headlineLarge: TextStyle(
-          color: textPrimary,
-          fontSize: 28,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.5,
-        ),
-        headlineMedium: TextStyle(
-          color: textPrimary,
-          fontSize: 22,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.3,
-        ),
-        headlineSmall: TextStyle(
-          color: textPrimary,
-          fontSize: 19,
-          fontWeight: FontWeight.w700,
-        ),
-        titleLarge: TextStyle(
-          color: textPrimary,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-        ),
-        titleMedium: TextStyle(
-          color: textPrimary,
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-        ),
-        titleSmall: TextStyle(
-          color: textPrimary,
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-        bodyLarge: TextStyle(
-          color: textPrimary,
-          fontSize: 16,
-          height: 1.4,
-        ),
-        bodyMedium: TextStyle(
-          color: textSecondary,
-          fontSize: 14,
-          height: 1.4,
-        ),
-        bodySmall: TextStyle(
-          color: textSecondary,
-          fontSize: 12,
-        ),
-        labelLarge: TextStyle(
-          color: textPrimary,
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.1,
-        ),
-        labelMedium: TextStyle(
-          color: textSecondary,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0.2,
-        ),
-        labelSmall: TextStyle(
-          color: textTertiary,
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0.3,
-        ),
-      ),
+      textTheme: _textTheme,
     );
   }
 }

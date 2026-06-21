@@ -27,7 +27,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     final cache = context.read<CacheService>();
 
-    // 1. Show cached data instantly
     final cached = await cache.get('notifications', ttl: const Duration(hours: 1));
     if (cached != null) {
       _notifications = (cached['data'] as List<dynamic>?)
@@ -37,14 +36,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
 
-    // 2. Fetch fresh data in background
     try {
       _notifications = await _service.getNotifications();
       await cache.set('notifications', {
         'data': _notifications,
       });
     } catch (e) {
-      // Keep showing cached data on error
+      // keep cached data
     }
     if (mounted) setState(() => _isLoading = false);
   }
@@ -52,8 +50,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.bg,
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: Text('Notifications', style: AppTheme.display(26, weight: FontWeight.w800)),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -62,12 +61,18 @@ class _NotificationScreenState extends State<NotificationScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryGreen))
           : _notifications.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No notifications yet',
-                    style: TextStyle(color: AppTheme.textSecondary),
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.notifications_none_rounded,
+                          size: 64, color: AppTheme.textTertiary),
+                      const SizedBox(height: 16),
+                      Text('No notifications yet',
+                          style: AppTheme.body(15, color: AppTheme.textSecondary)),
+                    ],
                   ),
                 )
               : RefreshIndicator(
@@ -81,11 +86,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       return Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         decoration: BoxDecoration(
-                          color: AppTheme.surfaceElevated,
+                          color: AppTheme.card,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isRead
-                                ? AppTheme.borderColor
+                                ? AppTheme.border
                                 : AppTheme.primaryGreen.withOpacity(0.3),
                           ),
                         ),
@@ -100,18 +105,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           ),
                           title: Text(
                             n['title'] ?? '',
-                            style: TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontWeight:
-                                  isRead ? FontWeight.w500 : FontWeight.w700,
-                            ),
+                            style: AppTheme.body(14,
+                                weight: isRead ? FontWeight.w500 : FontWeight.w700),
                           ),
                           subtitle: Text(
                             n['body'] ?? '',
-                            style: const TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 13,
-                            ),
+                            style: AppTheme.body(13, color: AppTheme.textSecondary),
                           ),
                           trailing: !isRead
                               ? IconButton(

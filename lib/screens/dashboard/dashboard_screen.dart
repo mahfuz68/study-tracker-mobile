@@ -31,9 +31,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final provider = context.read<ProgressProvider>();
     final cache = context.read<CacheService>();
 
-    // Check if daily cache bust is needed (4:00 AM threshold)
     if (await cache.shouldBustDailyCache()) {
-      // Force background refresh of all cached data
       await Future.wait([
         provider.loadStudyPlan(),
         context.read<McqProvider>().loadSubjects(),
@@ -44,7 +42,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await provider.loadStudyPlan();
     }
     if (!mounted) return;
-    // Auto-select the latest day whose date is on or before today.
     final pick = provider.latestDayOnOrBefore(DateTime.now());
     if (pick != null && pick.dayNumber != provider.currentDay) {
       provider.setCurrentDay(pick.dayNumber);
@@ -116,7 +113,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               return const SizedBox.shrink();
             }
 
-            // Current-day topic completion (for the topic list and bar).
             final completedToday = provider.currentProgress
                 .where((p) => p.isComplete)
                 .length;
@@ -124,9 +120,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final dayCompletion =
                 totalToday > 0 ? (completedToday / totalToday) : 0.0;
 
-            // Cross-day aggregates (for the "X / Y completed" line and
-            // percent). The user spec wants the dashboard to reflect ALL
-            // days, not just the current one.
             final totalCompleted = provider.totalCompleted;
             final totalTopics = provider.totalTopics;
             final overallCompletion = provider.completionRate;
@@ -170,27 +163,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 8),
                     ProgressBar(value: overallCompletion),
                     const SizedBox(height: 8),
-                    // Sub-line showing today's slice, since the user
-                    // is looking at a specific day.
                     Text(
                       totalToday == 0
                           ? 'No topics scheduled'
                           : '$completedToday / $totalToday on this day',
-                      style: const TextStyle(
-                        color: AppTheme.textTertiary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: AppTheme.body(12,
+                          weight: FontWeight.w500, color: AppTheme.textTertiary),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'Topics',
-                      style: TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.2,
-                      ),
+                      style: AppTheme.display(16, weight: FontWeight.w700),
                     ),
                     const SizedBox(height: 12),
                     ...day.topics.map((topic) {
@@ -207,19 +190,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           examMark: p?.examMark,
                           hasExam: p?.hasExam ?? false,
                           onToggle: isComplete
-                              ? () {} // one-way lock: no-op
+                              ? () {}
                               : () {
                                   provider.toggleComplete(
                                     topic.id,
                                     DateTime.now()
                                         .toIso8601String()
                                         .split('T')[0],
-                                    true, // always true — never uncheck
+                                    true,
                                   );
                                 },
                           onExamTap: () {
-                            // Switch to the MCQ tab (no route push) and
-                            // pre-fill the requested subject/topic.
                             context.read<NavigationController>().requestMcq(
                                   subject: topic.subject,
                                   topic: topic.topic,
@@ -258,15 +239,10 @@ class _Header extends StatelessWidget {
         : 'U';
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: Text(
             'Dashboard',
-            style: TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-            ),
+            style: AppTheme.display(26, weight: FontWeight.w800),
           ),
         ),
         Container(
@@ -333,12 +309,7 @@ class _ProgressHeader extends StatelessWidget {
             Expanded(
               child: Text(
                 'Day ${day.dayNumber}${dateLabel != null ? ' — $dateLabel' : ''}',
-                style: const TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
-                ),
+                style: AppTheme.body(14, weight: FontWeight.w700),
               ),
             ),
             Column(
@@ -352,16 +323,14 @@ class _ProgressHeader extends StatelessWidget {
                         : AppTheme.textSecondary,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
+                    fontFamily: 'Inter',
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '$percent%',
-                  style: const TextStyle(
-                    color: AppTheme.primaryGreen,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppTheme.body(12,
+                      weight: FontWeight.w600, color: AppTheme.primaryGreen),
                 ),
               ],
             ),
@@ -371,11 +340,8 @@ class _ProgressHeader extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             day.label!,
-            style: const TextStyle(
-              color: AppTheme.textTertiary,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
+            style: AppTheme.body(12,
+                weight: FontWeight.w500, color: AppTheme.textTertiary),
           ),
         ],
       ],
@@ -385,7 +351,6 @@ class _ProgressHeader extends StatelessWidget {
   static String? _formatDate(String? raw) {
     if (raw == null || raw.isEmpty) return null;
     try {
-      // Backend returns "YYYY-MM-DD". Parse as a local date.
       final parts = raw.split('-');
       if (parts.length != 3) return null;
       final dt = DateTime(
@@ -423,8 +388,7 @@ class _ErrorBanner extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
-                  color: AppTheme.textPrimary, fontSize: 13),
+              style: AppTheme.body(13),
             ),
           ),
           InkWell(

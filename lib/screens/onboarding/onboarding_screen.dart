@@ -91,7 +91,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             radius: 1.4,
             colors: [
               Color(0xFF1A2B23),
-              AppTheme.surfaceDark,
+              AppTheme.bg,
             ],
             stops: [0.0, 0.7],
           ),
@@ -111,12 +111,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20)),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Skip',
-                      style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AppTheme.body(14,
+                          weight: FontWeight.w600,
+                          color: AppTheme.textSecondary),
                     ),
                   ),
                 ),
@@ -170,23 +169,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           Text(
                             page.title,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                              height: 1.2,
-                              letterSpacing: -0.5,
-                            ),
+                            style: AppTheme.display(28, weight: FontWeight.w700),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             page.description,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 15,
-                              height: 1.55,
-                            ),
+                            style: AppTheme.body(15,
+                                color: AppTheme.textSecondary, weight: FontWeight.w400),
                           ),
                         ],
                       ),
@@ -211,7 +201,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           decoration: BoxDecoration(
                             color: isActive
                                 ? _pages[_currentPage].color
-                                : AppTheme.borderColor,
+                                : AppTheme.border,
                             borderRadius: BorderRadius.circular(4),
                             boxShadow: isActive
                                 ? [
@@ -263,12 +253,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           _currentPage < _pages.length - 1
                               ? 'Continue'
                               : 'Get Started',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: -0.2,
-                          ),
+                          style: AppTheme.body(16,
+                              weight: FontWeight.w700, color: Colors.white),
                         ),
                       ),
                     ),

@@ -64,13 +64,16 @@ class _ReportScreenState extends State<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Progress Report')),
+      backgroundColor: AppTheme.bg,
+      appBar: AppBar(
+        title: Text('Progress Report', style: AppTheme.display(26, weight: FontWeight.w800)),
+      ),
       body: _buildBody(),
     );
   }
 
   Widget _buildBody() {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return const Center(child: CircularProgressIndicator(color: AppTheme.primaryGreen));
     if (_error != null) {
       return Center(
         child: Column(
@@ -78,7 +81,7 @@ class _ReportScreenState extends State<ReportScreen> {
           children: [
             const Icon(Icons.error_outline, size: 48, color: AppTheme.textSecondary),
             const SizedBox(height: 12),
-            Text(_error!, style: const TextStyle(color: AppTheme.errorRed)),
+            Text(_error!, style: AppTheme.body(14, color: AppTheme.errorRed)),
             const SizedBox(height: 16),
             ElevatedButton(onPressed: _load, child: const Text('Retry')),
           ],
@@ -99,11 +102,8 @@ class _ReportScreenState extends State<ReportScreen> {
           ),
           child: Column(
             children: [
-              const Text('Study Progress Report',
-                  style: TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700)),
+              Text('Study Progress Report',
+                  style: AppTheme.display(20, weight: FontWeight.w700)),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -120,16 +120,16 @@ class _ReportScreenState extends State<ReportScreen> {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceElevated,
+                color: AppTheme.card,
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.border, width: 0.5),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Day ${day.dayNumber}',
-                      style: const TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontWeight: FontWeight.w600)),
+                      style: AppTheme.body(14,
+                          weight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   ...day.topics.map((t) => Padding(
                         padding: const EdgeInsets.symmetric(vertical: 2),
@@ -146,9 +146,8 @@ class _ReportScreenState extends State<ReportScreen> {
                             ),
                             const SizedBox(width: 8),
                             Text('${t.subject} - ${t.topic}',
-                                style: const TextStyle(
-                                    color: AppTheme.textSecondary,
-                                    fontSize: 13)),
+                                style: AppTheme.body(13,
+                                    color: AppTheme.textSecondary)),
                           ],
                         ),
                       )),
@@ -166,13 +165,13 @@ class _ReportScreenState extends State<ReportScreen> {
           Icon(icon, color: AppTheme.primaryGreen, size: 28),
           const SizedBox(height: 4),
           Text(value,
-              style: const TextStyle(
+              style: TextStyle(
                   color: AppTheme.textPrimary,
                   fontSize: 22,
-                  fontWeight: FontWeight.w700)),
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'JetBrains Mono')),
           Text(label,
-              style: const TextStyle(
-                  color: AppTheme.textSecondary, fontSize: 11)),
+              style: AppTheme.body(11, color: AppTheme.textSecondary)),
         ],
       ),
     );
